@@ -8,14 +8,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-button {
+a {
   cursor: pointer;
+  text-decoration: inherit;
 }
+
 
 body {
   margin: 0;
   display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+}
+
+
+button {
+  cursor: pointer;
 }

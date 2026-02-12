@@ -1,7 +1,7 @@
 import "./App.css";
 
 function App() {
-  return <>Bookkeeper</>;
+  return <>App</>;
 }
 
 export default App;
