@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!res.ok) {
-        console.warn("[Refresh] статус не 2xx:", res.status);
         return null;
       }
 
@@ -49,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const newAccessToken = data.accessToken || data.token;
 
       if (!newAccessToken) {
-        console.warn("[Refresh] нет accessToken в ответе");
         return null;
       }
 
@@ -61,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return newAccessToken;
     } catch (err) {
-      console.error("[Refresh] исключение:", err);
       return null;
     }
   }, []);
@@ -76,8 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (response.status === 401 || response.status === 403) {
-          console.log("[Auth] Получен 401/403 → запускаем refresh");
-
           const newToken = await refreshToken();
 
           if (!newToken) {
