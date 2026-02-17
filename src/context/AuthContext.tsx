@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 import { AuthState, User, LoginCredentials, AuthResponse } from "../types/auth";
 
@@ -15,34 +16,111 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = "auth_token";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    accessToken: "",
+    accessToken: null, // теперь только в памяти
     isLoading: true,
     error: null,
   });
 
-  useEffect(() => {
-    const token = localStorage.getItem(STORAGE_KEY);
-    if (token) {
-      // Здесь обычно делают запрос /me или /profile для получения текущего пользователя
-      // Для простоты предположим, что токен валиден
-      // В реальном проекте — запрос + обработка 401
-      setAuth({
-        user: { id: 0, email: "", name: "", username: "", role: "" },
-        isAuthenticated: true,
-        accessToken: "",
-        isLoading: false,
-        error: null,
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    try {
+      const res = await fetch("http://localhost:3000/auth/refresh", {
+        method: "POST",
+        credentials: "include",
       });
-    } else {
-      setAuth((prev) => ({ ...prev, isLoading: false }));
+
+      if (!res.ok) {
+        console.warn("[Refresh] статус не 2xx:", res.status);
+        return null;
+      }
+
+      const data = await res.json();
+      const newAccessToken = data.accessToken || data.token;
+
+      if (!newAccessToken) {
+        console.warn("[Refresh] нет accessToken в ответе");
+        return null;
+      }
+
+      setAuth((prev) => ({
+        ...prev,
+        accessToken: newAccessToken,
+        isAuthenticated: true,
+      }));
+
+      return newAccessToken;
+    } catch (err) {
+      console.error("[Refresh] исключение:", err);
+      return null;
     }
   }, []);
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      setAuth((prev) => ({ ...prev, isLoading: true }));
+
+      try {
+        let response = await fetch("http://localhost:3000/protected/me", {
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          console.log("[Auth] Получен 401/403 → запускаем refresh");
+
+          const newToken = await refreshToken();
+
+          if (!newToken) {
+            throw new Error("Не удалось обновить access token");
+          }
+
+          response = await fetch("http://localhost:3000/protected/me", {
+            credentials: "include",
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+            },
+          });
+        }
+
+        if (!response.ok) {
+          const errText = await response.text().catch(() => "");
+          console.error(
+            "[Auth] /me всё равно не ok:",
+            response.status,
+            errText,
+          );
+          throw new Error(`Сервер ответил ${response.status}`);
+        }
+
+        const userData: User = await response.json();
+
+        setAuth({
+          user: userData,
+          accessToken: auth.accessToken || null, // может быть обновлён в refreshToken
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.warn("Не удалось восстановить сессию:", err);
+        setAuth({
+          user: null,
+          accessToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
+    };
+
+    restoreSession();
+
+    // Можно добавить интервальное обновление токена, если accessToken короткоживущий
+    // const interval = setInterval(refreshToken, 5 * 60 * 1000); // каждые 5 мин
+    // return () => clearInterval(interval);
+  }, [refreshToken]); // зависимость от refreshToken (useCallback)
 
   const login = async (credentials: LoginCredentials) => {
     setAuth((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -53,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(credentials),
       });
 
@@ -63,11 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data: AuthResponse = await response.json();
 
-      localStorage.setItem(STORAGE_KEY, data.token);
-
       setAuth({
         user: data.user,
-        accessToken: data.accessToken,
+        accessToken: data.accessToken || data.token || null, // в зависимости от ответа сервера
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -81,62 +158,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw err;
     }
   };
-  const refreshToken = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/auth/refresh", {
-        method: "POST",
-        credentials: "include",
-      });
 
-      if (!res.ok) {
-        throw new Error("Refresh failed");
-      }
-
-      const data = await res.json();
-      setAuth((prev) => ({
-        ...prev,
-        accessToken: data.accessToken,
-        isAuthenticated: true,
-      }));
-
-      return data.accessToken;
-    } catch (err) {
-      logout();
-      throw err;
-    }
-  };
-  const makeRequest = async (url: string, options: RequestInit = {}) => {
-    let token = auth.accessToken;
-
-    // Если нет токена → пробуем обновить
-    if (!token) {
-      token = await refreshToken();
-    }
-
-    const headers = {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: "include",
-    });
-
-    if (response.status === 401) {
-      const newToken = await refreshToken();
-      headers.Authorization = `Bearer ${newToken}`;
-
-      return fetch(url, { ...options, headers, credentials: "include" });
-    }
-
-    return response;
-  };
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    fetch("http://localhost:3000/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
+
     setAuth({
       user: null,
+      accessToken: null,
       isAuthenticated: false,
       isLoading: false,
       error: null,

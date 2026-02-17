@@ -5,7 +5,18 @@ export default function ProtectedRoute() {
   const { auth } = useAuth();
 
   if (auth.isLoading) {
-    return <div>Проверка авторизации...</div>;
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        Проверка авторизации...
+      </div>
+    );
   }
 
   if (!auth.isAuthenticated) {

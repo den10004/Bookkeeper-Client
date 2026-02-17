@@ -5,8 +5,23 @@ export default function Profile() {
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
 
+  if (auth.isLoading) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.2rem",
+        }}
+      >
+        Проверка авторизации...
+      </div>
+    );
+  }
   if (!auth.isAuthenticated) {
-    navigate("/");
+    navigate("/", { replace: true });
     return null;
   }
 
