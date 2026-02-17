@@ -3,10 +3,16 @@ import {
   useContext,
   useState,
   useEffect,
-  ReactNode,
+  type ReactNode,
   useCallback,
 } from "react";
-import { AuthState, User, LoginCredentials, AuthResponse } from "../types/auth";
+
+import type {
+  AuthState,
+  User,
+  LoginCredentials,
+  AuthResponse,
+} from "../types/auth";
 
 interface AuthContextType {
   auth: AuthState;
@@ -17,17 +23,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
   const [auth, setAuth] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    accessToken: null, // теперь только в памяти
+    accessToken: null,
     isLoading: true,
     error: null,
   });
 
   const refreshToken = useCallback(async (): Promise<string | null> => {
     try {
-      const res = await fetch("http://localhost:3000/auth/refresh", {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
@@ -63,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuth((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        let response = await fetch("http://localhost:3000/protected/me", {
+        let response = await fetch(`${API_BASE}/protected/me`, {
           credentials: "include",
         });
 
@@ -76,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw new Error("Не удалось обновить access token");
           }
 
-          response = await fetch("http://localhost:3000/protected/me", {
+          response = await fetch(`${API_BASE}/protected/me`, {
             credentials: "include",
             headers: {
               Authorization: `Bearer ${newToken}`,
@@ -98,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setAuth({
           user: userData,
-          accessToken: auth.accessToken || null, // может быть обновлён в refreshToken
+          accessToken: auth.accessToken || null,
           isAuthenticated: true,
           isLoading: false,
           error: null,
@@ -126,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await fetch("http://localhost:3000/auth/login", {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    fetch("http://localhost:3000/auth/logout", {
+    fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => {});
