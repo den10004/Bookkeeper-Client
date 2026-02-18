@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
     error: null,
   });
-
+  console.log(auth.user);
   const refreshToken = useCallback(async (): Promise<string | null> => {
     try {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
@@ -51,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       console.log("Refresh response:", data);
 
-      // Проверяем разные возможные форматы ответа
       return data.accessToken || data.token || null;
     } catch (err) {
       console.error("Refresh token error:", err);
@@ -90,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuth((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        // Пытаемся получить новый access token через refresh token
         const newToken = await refreshToken();
 
         if (!newToken) {
@@ -105,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Получаем данные пользователя
         const userData = await fetchUserData(newToken);
 
         if (!userData) {
@@ -120,7 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        console.log("Session restored successfully");
         setAuth({
           user: userData,
           accessToken: newToken,
@@ -199,7 +195,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         credentials: "include",
       });
-      console.log("Logout successful");
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
