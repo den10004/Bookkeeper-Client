@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
     error: null,
   });
-  console.log(auth.user);
+
   const refreshToken = useCallback(async (): Promise<string | null> => {
     try {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
@@ -49,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await res.json();
-      console.log("Refresh response:", data);
 
       return data.accessToken || data.token || null;
     } catch (err) {
@@ -161,7 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data: AuthResponse = await response.json();
-      console.log("Login response:", data);
 
       const accessToken = data.accessToken || data.token;
 
@@ -176,8 +174,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         error: null,
       });
-
-      console.log("Login successful");
     } catch (err: any) {
       console.error("Login error:", err);
       setAuth((prev) => ({

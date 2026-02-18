@@ -1,15 +1,6 @@
-// services/api.ts
-const API_BASE = "http://localhost:3000";
+import type { Application, User } from "../types/auth";
 
-export interface Application {
-  id: string;
-  title?: string;
-  description?: string;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  userId?: string;
-}
+const API_BASE = "http://localhost:3000";
 
 class ApiService {
   private getHeaders(token?: string): HeadersInit {
@@ -52,17 +43,43 @@ class ApiService {
     }
   }
 
-  async createApplication(
-    token: string,
-    data: Partial<Application>,
-  ): Promise<Application> {
+  async getUsersByRole(role: string, token: string): Promise<User[]> {
     try {
-      const response = await fetch(`${API_BASE}/protected/applications`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE}/protected/accountants`, {
+        method: "GET",
         headers: this.getHeaders(token),
         credentials: "include",
-        body: JSON.stringify(data),
       });
+      return this.handleResponse<User[]>(response);
+    } catch (error) {
+      console.error(
+        `Ошибка при получении пользователей с ролью ${role}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  async createApplication(
+    token: string,
+    data: Partial<Application> | FormData,
+  ): Promise<Application> {
+    try {
+      const isFormData = data instanceof FormData;
+
+      const response = await fetch(`${API_BASE}/protected/applications`, {
+        method: "POST",
+        headers: isFormData
+          ? { Authorization: `Bearer ${token}` }
+          : this.getHeaders(token),
+        credentials: "include",
+        body: isFormData ? data : JSON.stringify(data),
+      });
+
+      if (!isFormData) {
+        console.log("Отправка JSON:", data);
+      }
+
       return this.handleResponse<Application>(response);
     } catch (error) {
       console.error("Ошибка при создании заявки:", error);

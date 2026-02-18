@@ -1,9 +1,4 @@
-export default function Applications({
-  setLoadingApps,
-  loadingApps,
-  appsError,
-  applications,
-}) {
+export default function Applications({ loadingApps, appsError, applications }) {
   console.log(applications);
 
   const downloadFile = (fileData, downloadLink, e) => {

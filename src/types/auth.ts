@@ -31,3 +31,28 @@ export interface AuthContextType {
   logout: () => void;
   refresh?: () => Promise<boolean>;
 }
+/*
+export interface Application {
+  id: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  userId?: string;
+}
+*/
+
+export interface Application {
+  id: string;
+  name: string;
+  organization: string;
+  assignedAccountantId: string;
+  accountant?: User;
+  fileUrl?: string;
+  cost?: string;
+  quantity?: string;
+  comment?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,18 +1,10 @@
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { api } from "../services/api";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { api } from "../services/api";
 import Applications from "../components/Applications";
-
-interface Application {
-  id: string;
-  title?: string;
-  description?: string;
-  status?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  userId?: string;
-}
+import type { Application } from "../types/auth";
+import AddApplication from "../components/AddApplication";
 
 export default function Profile() {
   const { auth, logout } = useAuth();
@@ -80,18 +72,18 @@ export default function Profile() {
         <h1 style={{ marginTop: 0 }}>Профиль пользователя</h1>
 
         <div style={{ display: "grid", gap: "0" }}>
-          <p>
+          <div>
             <strong>Email:</strong> {auth.user?.email}
-          </p>
-          <p>
+          </div>
+          <div>
             <strong>ID:</strong> {auth.user?.id}
-          </p>
-          <p>
+          </div>
+          <div>
             <strong>Username:</strong> {auth.user?.username}
-          </p>
-          <p>
+          </div>
+          <div>
             <strong>Role:</strong> {auth.user?.role}
-          </p>
+          </div>
         </div>
 
         <button
@@ -113,7 +105,7 @@ export default function Profile() {
           Выйти
         </button>
       </div>
-
+      {auth.user?.role === "manager" && <AddApplication />}
       <Applications
         loadingApps={loadingApps}
         setLoadingApps={setLoadingApps}
