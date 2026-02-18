@@ -108,7 +108,6 @@ export default function Profile() {
       {auth.user?.role === "manager" && <AddApplication />}
       <Applications
         loadingApps={loadingApps}
-        setLoadingApps={setLoadingApps}
         appsError={appsError}
         applications={applications}
       />

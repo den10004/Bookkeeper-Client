@@ -1,7 +1,23 @@
-export default function Applications({ loadingApps, appsError, applications }) {
+import type { Application, DownloadLink, FileData } from "../types/auth";
+
+interface ApplicationsProps {
+  loadingApps: boolean;
+  appsError: string | null;
+  applications: Application[];
+}
+
+export default function Applications({
+  loadingApps,
+  appsError,
+  applications,
+}: ApplicationsProps) {
   console.log(applications);
 
-  const downloadFile = (fileData, downloadLink, e) => {
+  const downloadFile = (
+    fileData: FileData,
+    downloadLink: DownloadLink | undefined,
+    e: React.MouseEvent,
+  ) => {
     e.stopPropagation();
 
     if (!downloadLink || !downloadLink.url) {
