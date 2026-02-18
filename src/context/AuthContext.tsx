@@ -9,6 +9,7 @@ import {
 
 import type {
   AuthState,
+  User,
   LoginCredentials,
   AuthResponse,
   AuthContextType,
@@ -32,66 +33,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
       if (res.status === 401) {
+        console.log("Refresh token expired or invalid");
         return null;
       }
 
       if (!res.ok) {
+        console.log("Refresh failed with status:", res.status);
         return null;
       }
 
       const data = await res.json();
+      console.log("Refresh response:", data);
+
+      // Проверяем разные возможные форматы ответа
       return data.accessToken || data.token || null;
     } catch (err) {
+      console.error("Refresh token error:", err);
       return null;
     }
   }, [API_BASE]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const restoreSession = async () => {
-      // 1. Показываем лоадер почти всегда при первой загрузке
-      setAuth((prev) => ({ ...prev, isLoading: true }));
-
+  const fetchUserData = useCallback(
+    async (token: string): Promise<User | null> => {
       try {
-        // Пытаемся обновить токен БЕЗ проверки isAuthenticated / accessToken
-        // Если http-only refresh cookie есть → сервер вернёт новый access token
-        const newToken = await refreshToken();
-
-        if (!newToken) {
-          // Нет refresh-токена (или он недействителен) → не авторизован
-          throw new Error("No valid session");
-        }
-
-        // 2. Получаем данные пользователя с новым токеном
-        const res = await fetch(`${API_BASE}/protected/me`, {
+        const response = await fetch(`${API_BASE}/protected/me`, {
           credentials: "include",
           headers: {
-            Authorization: `Bearer ${newToken}`,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
 
-        if (!res.ok) {
-          throw new Error("Cannot fetch user");
+        if (!response.ok) {
+          console.log("Failed to fetch user data:", response.status);
+          return null;
         }
 
-        const userData = await res.json();
-
-        if (isMounted) {
-          setAuth({
-            user: userData,
-            accessToken: newToken,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-        }
+        const userData: User = await response.json();
+        return userData;
       } catch (err) {
-        console.debug("Session restore failed:", err);
-        if (isMounted) {
+        console.error("Fetch user data error:", err);
+        return null;
+      }
+    },
+    [API_BASE],
+  );
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      setAuth((prev) => ({ ...prev, isLoading: true }));
+
+      try {
+        // Пытаемся получить новый access token через refresh token
+        const newToken = await refreshToken();
+
+        if (!newToken) {
+          console.log("No token received from refresh");
           setAuth({
             user: null,
             accessToken: null,
@@ -99,21 +102,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading: false,
             error: null,
           });
+          return;
         }
+
+        // Получаем данные пользователя
+        const userData = await fetchUserData(newToken);
+
+        if (!userData) {
+          console.log("No user data received");
+          setAuth({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+
+        console.log("Session restored successfully");
+        setAuth({
+          user: userData,
+          accessToken: newToken,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.error("Session restoration error:", err);
+        setAuth({
+          user: null,
+          accessToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
       }
     };
 
     restoreSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [refreshToken]);
+  }, [refreshToken, fetchUserData]);
 
   const login = async (credentials: LoginCredentials) => {
     setAuth((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      console.log("Attempting login...");
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
@@ -131,7 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data: AuthResponse = await response.json();
+      console.log("Login response:", data);
+
       const accessToken = data.accessToken || data.token;
+
+      if (!accessToken) {
+        throw new Error("No access token received");
+      }
 
       setAuth({
         user: data.user,
@@ -140,7 +180,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false,
         error: null,
       });
+
+      console.log("Login successful");
     } catch (err: any) {
+      console.error("Login error:", err);
       setAuth((prev) => ({
         ...prev,
         isLoading: false,
@@ -156,6 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         credentials: "include",
       });
+      console.log("Logout successful");
+    } catch (err) {
+      console.error("Logout error:", err);
     } finally {
       setAuth({
         user: null,
