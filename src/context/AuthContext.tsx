@@ -9,16 +9,10 @@ import {
 
 import type {
   AuthState,
-  User,
   LoginCredentials,
   AuthResponse,
+  AuthContextType,
 } from "../types/auth";
-
-interface AuthContextType {
-  auth: AuthState;
-  login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
-}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -40,90 +34,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include",
       });
 
+      if (res.status === 401) {
+        return null;
+      }
+
       if (!res.ok) {
         return null;
       }
 
       const data = await res.json();
-      const newAccessToken = data.accessToken || data.token;
-
-      if (!newAccessToken) {
-        return null;
-      }
-
-      setAuth((prev) => ({
-        ...prev,
-        accessToken: newAccessToken,
-        isAuthenticated: true,
-      }));
-
-      return newAccessToken;
+      return data.accessToken || data.token || null;
     } catch (err) {
       return null;
     }
-  }, []);
+  }, [API_BASE]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const restoreSession = async () => {
+      // 1. Показываем лоадер почти всегда при первой загрузке
       setAuth((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        let response = await fetch(`${API_BASE}/protected/me`, {
+        // Пытаемся обновить токен БЕЗ проверки isAuthenticated / accessToken
+        // Если http-only refresh cookie есть → сервер вернёт новый access token
+        const newToken = await refreshToken();
+
+        if (!newToken) {
+          // Нет refresh-токена (или он недействителен) → не авторизован
+          throw new Error("No valid session");
+        }
+
+        // 2. Получаем данные пользователя с новым токеном
+        const res = await fetch(`${API_BASE}/protected/me`, {
           credentials: "include",
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+          },
         });
 
-        if (response.status === 401 || response.status === 403) {
-          const newToken = await refreshToken();
+        if (!res.ok) {
+          throw new Error("Cannot fetch user");
+        }
 
-          if (!newToken) {
-            throw new Error("Не удалось обновить access token");
-          }
+        const userData = await res.json();
 
-          response = await fetch(`${API_BASE}/protected/me`, {
-            credentials: "include",
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-            },
+        if (isMounted) {
+          setAuth({
+            user: userData,
+            accessToken: newToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
           });
         }
-
-        if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          console.error(
-            "[Auth] /me всё равно не ok:",
-            response.status,
-            errText,
-          );
-          throw new Error(`Сервер ответил ${response.status}`);
-        }
-
-        const userData: User = await response.json();
-
-        setAuth({
-          user: userData,
-          accessToken: auth.accessToken || null,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
       } catch (err) {
-        console.warn("Не удалось восстановить сессию:", err);
-        setAuth({
-          user: null,
-          accessToken: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+        console.debug("Session restore failed:", err);
+        if (isMounted) {
+          setAuth({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
       }
     };
 
     restoreSession();
 
-    // Можно добавить интервальное обновление токена, если accessToken короткоживущий
-    // const interval = setInterval(refreshToken, 5 * 60 * 1000); // каждые 5 мин
-    // return () => clearInterval(interval);
-  }, [refreshToken]); // зависимость от refreshToken (useCallback)
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshToken]);
 
   const login = async (credentials: LoginCredentials) => {
     setAuth((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -139,15 +124,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response
+          .json()
+          .catch(() => ({ message: "Ошибка входа" }));
         throw new Error(err.message || "Ошибка входа");
       }
 
       const data: AuthResponse = await response.json();
+      const accessToken = data.accessToken || data.token;
 
       setAuth({
         user: data.user,
-        accessToken: data.accessToken || data.token || null, // в зависимости от ответа сервера
+        accessToken: accessToken,
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -162,19 +150,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
-    fetch(`${API_BASE}/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    }).catch(() => {});
-
-    setAuth({
-      user: null,
-      accessToken: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null,
-    });
+  const logout = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setAuth({
+        user: null,
+        accessToken: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+    }
   };
 
   return (

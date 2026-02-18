@@ -24,3 +24,10 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
 }
+
+export interface AuthContextType {
+  auth: AuthState;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
+  refresh?: () => Promise<boolean>;
+}
