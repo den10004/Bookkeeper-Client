@@ -52,8 +52,8 @@ export interface Application {
   };
   createdAt?: string;
   organization?: string;
-  quantity?: number;
-  cost?: string | number;
+  quantity?: string;
+  cost?: string | string;
   comment?: string;
   files?: FileData[];
   downloadLinks?: DownloadLink[];

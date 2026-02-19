@@ -5,6 +5,7 @@ import { api } from "../services/api";
 import Applications from "../components/Applications";
 import type { Application } from "../types/auth";
 import AddApplication from "../components/AddApplication";
+import Users from "../components/Users";
 
 export default function Profile() {
   const { auth, logout } = useAuth();
@@ -111,6 +112,8 @@ export default function Profile() {
         appsError={appsError}
         applications={applications}
       />
+
+      {auth.user?.role === "director" && <Users />}
     </div>
   );
 }

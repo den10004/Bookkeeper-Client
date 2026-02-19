@@ -86,7 +86,6 @@ export default function AddApplication({
       let newApplication: Application;
 
       if (file) {
-        // Создаем FormData для отправки файла
         const formDataToSend = new FormData();
         formDataToSend.append("name", formData.name);
         formDataToSend.append("organization", formData.organization);
@@ -97,16 +96,14 @@ export default function AddApplication({
         formDataToSend.append("cost", formData.cost);
         formDataToSend.append("quantity", formData.quantity);
         formDataToSend.append("comment", formData.comment || "");
-        formDataToSend.append("files", file); // Важно: имя поля "files"
+        formDataToSend.append("files", file);
 
-        // Используем api.createApplication с FormData
         newApplication = await api.createApplication(
           auth.accessToken,
           formDataToSend,
         );
       } else {
-        // Отправляем JSON
-        const applicationData: Partial<Application> = {
+        const applicationData = {
           name: formData.name,
           organization: formData.organization,
           assignedAccountantId: formData.assignedAccountantId,

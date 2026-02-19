@@ -1,17 +1,75 @@
 import type { Application, DownloadLink, FileData } from "../types/auth";
+import { api } from "../services/api";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
 interface ApplicationsProps {
   loadingApps: boolean;
   appsError: string | null;
   applications: Application[];
+  onApplicationsUpdate?: () => void;
 }
 
 export default function Applications({
   loadingApps,
   appsError,
   applications,
+  onApplicationsUpdate,
 }: ApplicationsProps) {
-  console.log(applications);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<Application>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { auth } = useAuth();
+
+  const startEditing = (app: Application, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(app.id);
+    setEditFormData({
+      name: app.name,
+      organization: app.organization,
+      quantity: app.quantity,
+      cost: app.cost,
+      comment: app.comment,
+    });
+  };
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    field: keyof Application,
+  ) => {
+    setEditFormData({
+      ...editFormData,
+      [field]: e.target.value,
+    });
+  };
+
+  const cancelEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(null);
+    setEditFormData({});
+  };
+
+  const saveChanges = async (appId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!auth.accessToken) {
+      console.error("Токен не найден");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await api.updateApplication(auth.accessToken, appId, editFormData);
+      setEditingId(null);
+      setEditFormData({});
+      if (onApplicationsUpdate) {
+        onApplicationsUpdate();
+      }
+    } catch (error) {
+      console.error("Ошибка при обновлении заявки:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const downloadFile = (
     fileData: FileData,
@@ -31,6 +89,95 @@ export default function Applications({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const renderEditableField = (
+    app: Application,
+    field: keyof Application,
+    label: string,
+    type: "text" | "number" | "textarea" = "text",
+  ) => {
+    const isEditing = editingId === app.id;
+    const value = isEditing ? editFormData[field] : app[field];
+
+    if (isEditing) {
+      if (type === "textarea") {
+        return (
+          <div style={{ marginBottom: "10px" }}>
+            <label
+              style={{
+                fontSize: "0.85rem",
+                color: "#777",
+                display: "block",
+                marginBottom: "4px",
+              }}
+            >
+              {label}:
+            </label>
+            <textarea
+              value={(value as string) || ""}
+              onChange={(e) => handleInputChange(e, field)}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                padding: "8px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                fontSize: "0.9rem",
+                fontFamily: "inherit",
+              }}
+              rows={3}
+            />
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ marginBottom: "10px" }}>
+          <label
+            style={{
+              fontSize: "0.85rem",
+              color: "#777",
+              display: "block",
+              marginBottom: "4px",
+            }}
+          >
+            {label}:
+          </label>
+          <input
+            type={type}
+            value={(value as string) || ""}
+            onChange={(e) => handleInputChange(e, field)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              padding: "8px",
+              border: "1px solid #ddd",
+              borderRadius: "4px",
+              fontSize: "0.9rem",
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (!value) return null;
+
+    return (
+      <div style={{ marginBottom: "10px" }}>
+        <span
+          style={{
+            fontSize: "0.85rem",
+            color: "#777",
+            display: "block",
+            marginBottom: "4px",
+          }}
+        >
+          {label}:
+        </span>
+        <span style={{ color: "#555", lineHeight: "1.5" }}>{value}</span>
+      </div>
+    );
   };
 
   return (
@@ -72,10 +219,11 @@ export default function Applications({
               key={app.id}
               style={{
                 padding: "20px",
-                border: "1px solid #ddd",
+                border:
+                  editingId === app.id ? "2px solid #28a745" : "1px solid #ddd",
                 borderRadius: "8px",
                 backgroundColor: "#f9f9f9",
-                transition: "box-shadow 0.3s",
+                transition: "box-shadow 0.3s, border-color 0.3s",
                 cursor: "pointer",
               }}
               onMouseEnter={(e) => {
@@ -93,7 +241,7 @@ export default function Applications({
                   marginBottom: "10px",
                 }}
               >
-                <h3 style={{ margin: 0 }}>{app.name || "Без названия"}</h3>{" "}
+                {renderEditableField(app, "name", "Название", "text")}
               </div>
 
               {app.Creator?.username && (
@@ -136,57 +284,18 @@ export default function Applications({
                 )}
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  fontSize: "0.85rem",
-                  color: "#777",
-                  marginTop: "10px",
-                }}
-              >
-                {app.organization && (
-                  <span>Организация: {app.organization}</span>
-                )}
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  fontSize: "0.85rem",
-                  color: "#777",
-                  marginTop: "10px",
-                }}
-              >
-                {app.quantity && <span>Количество лидов: {app.quantity}</span>}
-              </div>
-
-              {app.cost && (
-                <p
-                  style={{
-                    margin: "10px 0",
-                    color: "#555",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  Стоимость лида: {app.cost}
-                </p>
+              {renderEditableField(app, "organization", "Организация")}
+              {renderEditableField(
+                app,
+                "quantity",
+                "Количество лидов",
+                "number",
               )}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  fontSize: "0.85rem",
-                  color: "#777",
-                  marginTop: "10px",
-                }}
-              >
-                {app.comment && <span>Комментарии: {app.comment}</span>}
-              </div>
+              {renderEditableField(app, "cost", "Стоимость лида", "text")}
+              {renderEditableField(app, "comment", "Комментарии", "textarea")}
 
               {app.files && app.files.length > 0 && (
-                <div>
+                <div style={{ marginTop: "15px" }}>
                   <p style={{ marginBottom: "5px", fontWeight: "500" }}>
                     Файлы:
                   </p>
@@ -255,23 +364,57 @@ export default function Applications({
                   paddingTop: "15px",
                 }}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    console.log("Редактирование заявки:", app.id);
-                  }}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Редактировать
-                </button>
+                {editingId === app.id ? (
+                  <>
+                    <button
+                      onClick={(e) => saveChanges(app.id, e)}
+                      disabled={isUpdating}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: isUpdating ? "#6c757d" : "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: isUpdating ? "not-allowed" : "pointer",
+                        fontSize: "0.9rem",
+                        opacity: isUpdating ? 0.7 : 1,
+                      }}
+                    >
+                      {isUpdating ? "Сохранение..." : "Сохранить"}
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      disabled={isUpdating}
+                      style={{
+                        padding: "6px 12px",
+                        backgroundColor: "#6c757d",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: isUpdating ? "not-allowed" : "pointer",
+                        fontSize: "0.9rem",
+                        opacity: isUpdating ? 0.7 : 1,
+                      }}
+                    >
+                      Отмена
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={(e) => startEditing(app, e)}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "#28a745",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Редактировать
+                  </button>
+                )}
               </div>
             </div>
           ))}
