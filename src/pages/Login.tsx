@@ -19,17 +19,10 @@ export default function Login() {
   if (auth.isLoading) return <div>Загрузка...</div>;
 
   return (
-    <div style={{ maxWidth: "400px", margin: "80px auto", padding: "20px" }}>
+    <div className="login__container">
       <h1>Вход</h1>
-
-      {auth.error && (
-        <div style={{ color: "crimson", marginBottom: "16px" }}>
-          {auth.error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "16px" }}>
+      <form onSubmit={handleSubmit} className="login__form">
+        <div>
           <label>
             Email
             <input
@@ -37,12 +30,11 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ display: "block", width: "100%", marginTop: "8px" }}
             />
           </label>
         </div>
 
-        <div style={{ marginBottom: "24px" }}>
+        <div>
           <label>
             Пароль
             <input
@@ -50,16 +42,13 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ display: "block", width: "100%", marginTop: "8px" }}
             />
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={auth.isLoading}
-          style={{ width: "100%", padding: "12px" }}
-        >
+        {auth.error && <div className="error">{auth.error}</div>}
+
+        <button type="submit" disabled={auth.isLoading}>
           {auth.isLoading ? "Вход..." : "Войти"}
         </button>
       </form>

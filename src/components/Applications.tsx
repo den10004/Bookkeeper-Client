@@ -20,38 +20,18 @@ export default function Applications({
 }: ApplicationsProps) {
   return (
     <div>
-      <h2 style={{ marginBottom: "20px" }}>Заявки</h2>
+      <h2>Заявки</h2>
 
       {loadingApps ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          Загрузка заявок...
-        </div>
+        <div className="cards-errors">Загрузка заявок...</div>
       ) : appsError ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "20px",
-            color: "red",
-            backgroundColor: "#ffeeee",
-            borderRadius: "4px",
-          }}
-        >
+        <div className="cards-errors">
           <p>{appsError}</p>
         </div>
       ) : applications.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "40px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "4px",
-            color: "#666",
-          }}
-        >
-          Нет заявок
-        </div>
+        <div className="cards-errors">Нет заявок</div>
       ) : (
-        <div style={{ display: "grid", gap: "15px" }}>
+        <div className="cards__block">
           {applications.map((application) => (
             <ApplicationCard
               key={application.id}

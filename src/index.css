@@ -1,24 +1,33 @@
+:root {
+  --bg: #f5f5f5;
+  --bg2: rgb(249, 249, 249);
+  --border: rgb(221, 221, 221);
+  --green: green;
+  --red: red;
+  --blue: blue;
+}
+
 body {
   font-family: -apple-system, BlinkMacOSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
   padding: 0;
-  background: #f5f5f5;
+  background: var(--bg);
 }
 
-.login-container,
+.login__container,
 .requests-page {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 80px auto;
-  padding: 30px 20px;
-  background: white;
+  padding: 20px;
+  box-sizing: border-box;
+  background: var(--bg);
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-h1,
-h2 {
-  text-align: center;
-  margin-bottom: 30px;
+ul {
+  list-style-type: none;
+  padding-left: 0;
 }
 
 .form-group {
@@ -34,30 +43,20 @@ label {
 input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 16px;
+  box-sizing: border-box;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
-  background: #1976d2;
-  color: white;
+  color: var(--bg);
   border: none;
   border-radius: 4px;
+  padding: 10px;
+  box-sizing: border-box;
   font-size: 16px;
   cursor: pointer;
-}
-
-button:hover {
-  background: #1565c0;
-}
-
-.error {
-  color: #d32f2f;
-  margin: 10px 0;
-  text-align: center;
 }
 
 .header {
@@ -73,34 +72,69 @@ button:hover {
   padding: 8px 16px;
 }
 
-.logout-btn:hover {
-  background: #b71c1c;
-}
 
 table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th,
-td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+.error {
+  color: var(--red);
 }
 
-th {
-  background: #f0f0f0;
+.wrapper {
+  max-width: 1000px;
+  margin: 20px auto;
+  padding: 0 20px;
+  box-sizing: border-box;
 }
 
-.status.новая {
-  color: #e65100;
+.wrapper-block {
+  background-color: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
-.status.вработе {
-  color: #1976d2;
+/************** страница логина****************/
+.login__form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.status.выполнена {
-  color: #388e3c;
+.login__form>div>label>input {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login__form>button {
+  width: 100%;
+  background-color: var(--green);
+}
+
+/******Account ******************/
+.account__block {
+  margin-bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.account__block>button {
+  background-color: var(--blue);
+}
+
+/******Cards ******************/
+.cards-errors {
+  text-align: center;
+  padding: 20px;
+  color: var(--red);
+}
+
+.cards__block {
+  display: grid;
+  gap: 15px;
 }
