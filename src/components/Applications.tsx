@@ -1,6 +1,6 @@
 import type { Application, DownloadLink, FileData } from "../types/auth";
 import { api } from "../services/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 interface ApplicationsProps {
@@ -19,7 +19,13 @@ export default function Applications({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Application>>({});
   const [isUpdating, setIsUpdating] = useState(false);
+  const [localApplications, setLocalApplications] =
+    useState<Application[]>(applications);
   const { auth } = useAuth();
+
+  useEffect(() => {
+    setLocalApplications(applications);
+  }, [applications]);
 
   const startEditing = (app: Application, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -58,9 +64,20 @@ export default function Applications({
 
     setIsUpdating(true);
     try {
+      // Обновляем только текстовые поля
       await api.updateApplication(auth.accessToken, appId, editFormData);
+
+      // Локально обновляем данные
+      setLocalApplications((prevApps) =>
+        prevApps.map((app) =>
+          app.id === appId ? { ...app, ...editFormData } : app,
+        ),
+      );
+
       setEditingId(null);
       setEditFormData({});
+
+      // Опционально вызываем родительское обновление для синхронизации
       if (onApplicationsUpdate) {
         onApplicationsUpdate();
       }
@@ -99,6 +116,7 @@ export default function Applications({
   ) => {
     const isEditing = editingId === app.id;
     const value = isEditing ? editFormData[field] : app[field];
+    const displayValue = value || "Не указано";
 
     if (isEditing) {
       if (type === "textarea") {
@@ -127,6 +145,7 @@ export default function Applications({
                 fontFamily: "inherit",
               }}
               rows={3}
+              placeholder={`Введите ${label.toLowerCase()}`}
             />
           </div>
         );
@@ -156,12 +175,11 @@ export default function Applications({
               borderRadius: "4px",
               fontSize: "0.9rem",
             }}
+            placeholder={`Введите ${label.toLowerCase()}`}
           />
         </div>
       );
     }
-
-    if (!value) return null;
 
     return (
       <div style={{ marginBottom: "10px" }}>
@@ -175,7 +193,7 @@ export default function Applications({
         >
           {label}:
         </span>
-        <span style={{ color: "#555", lineHeight: "1.5" }}>{value}</span>
+        <span style={{ color: "#555", lineHeight: "1.5" }}>{displayValue}</span>
       </div>
     );
   };
@@ -200,7 +218,7 @@ export default function Applications({
         >
           <p>{appsError}</p>
         </div>
-      ) : applications.length === 0 ? (
+      ) : localApplications.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -214,7 +232,7 @@ export default function Applications({
         </div>
       ) : (
         <div style={{ display: "grid", gap: "15px" }}>
-          {applications.map((app) => (
+          {localApplications.map((app) => (
             <div
               key={app.id}
               style={{
@@ -244,29 +262,25 @@ export default function Applications({
                 {renderEditableField(app, "name", "Название", "text")}
               </div>
 
-              {app.Creator?.username && (
-                <p
-                  style={{
-                    margin: "10px 0",
-                    color: "#555",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  Создано: {app.Creator.username}
-                </p>
-              )}
+              <p
+                style={{
+                  margin: "10px 0",
+                  color: "#555",
+                  lineHeight: "1.5",
+                }}
+              >
+                Создано: {app.Creator?.username || "Не указано"}
+              </p>
 
-              {app.AssignedAccountant?.username && (
-                <p
-                  style={{
-                    margin: "10px 0",
-                    color: "#555",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  Назначено: {app.AssignedAccountant.username}
-                </p>
-              )}
+              <p
+                style={{
+                  margin: "10px 0",
+                  color: "#555",
+                  lineHeight: "1.5",
+                }}
+              >
+                Назначено: {app.AssignedAccountant?.username || "Не назначено"}
+              </p>
 
               <div
                 style={{
@@ -277,11 +291,12 @@ export default function Applications({
                   marginTop: "10px",
                 }}
               >
-                {app.createdAt && (
-                  <span>
-                    📅 Создано: {new Date(app.createdAt).toLocaleDateString()}
-                  </span>
-                )}
+                <span>
+                  📅 Создано:{" "}
+                  {app.createdAt
+                    ? new Date(app.createdAt).toLocaleDateString()
+                    : "Дата не указана"}
+                </span>
               </div>
 
               {renderEditableField(app, "organization", "Организация")}
@@ -294,12 +309,10 @@ export default function Applications({
               {renderEditableField(app, "cost", "Стоимость лида", "text")}
               {renderEditableField(app, "comment", "Комментарии", "textarea")}
 
-              {app.files && app.files.length > 0 && (
-                <div style={{ marginTop: "15px" }}>
-                  <p style={{ marginBottom: "5px", fontWeight: "500" }}>
-                    Файлы:
-                  </p>
-                  {app.files.map((file, index) => {
+              <div style={{ marginTop: "15px" }}>
+                <p style={{ marginBottom: "5px", fontWeight: "500" }}>Файлы:</p>
+                {app.files && app.files.length > 0 ? (
+                  app.files.map((file, index) => {
                     const downloadLink =
                       app.downloadLinks && app.downloadLinks[index];
 
@@ -351,9 +364,21 @@ export default function Applications({
                         )}
                       </div>
                     );
-                  })}
-                </div>
-              )}
+                  })
+                ) : (
+                  <p
+                    style={{
+                      color: "#777",
+                      fontStyle: "italic",
+                      padding: "8px",
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    Файлов нет
+                  </p>
+                )}
+              </div>
 
               <div
                 style={{

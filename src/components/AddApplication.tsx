@@ -118,6 +118,35 @@ export default function AddApplication({
         );
       }
 
+      // Добавляем информацию о создателе и назначенном бухгалтере для локального обновления
+      const enrichedApplication: Application = {
+        ...newApplication,
+        // Если API не возвращает полные данные о создателе и бухгалтере,
+        // добавляем их из локальных данных
+        Creator: auth.user || newApplication.Creator,
+        AssignedAccountant:
+          accountants.find((acc) => acc.id === formData.assignedAccountantId) ||
+          newApplication.AssignedAccountant,
+        // Добавляем текущую дату, если API не возвращает
+        createdAt: newApplication.createdAt || new Date().toISOString(),
+        // Добавляем информацию о файлах
+        files: file
+          ? [
+              {
+                original: file.name,
+                size: file.size,
+                // Другие поля файла, если нужны
+              },
+            ]
+          : newApplication.files || [],
+      };
+
+      // Вызываем колбэк с обогащенными данными
+      if (onApplicationAdded) {
+        onApplicationAdded(enrichedApplication);
+      }
+
+      // Сбрасываем форму
       setFormData({
         name: "",
         organization: "",
@@ -128,10 +157,6 @@ export default function AddApplication({
       });
       setFile(null);
       setIsOpen(false);
-
-      if (onApplicationAdded && newApplication) {
-        onApplicationAdded(newApplication);
-      }
     } catch (err) {
       console.error("Ошибка при создании заявки:", err);
       setError(
@@ -142,6 +167,7 @@ export default function AddApplication({
     }
   };
 
+  // Остальной JSX без изменений...
   return (
     <div style={{ marginBottom: "20px" }}>
       <button
