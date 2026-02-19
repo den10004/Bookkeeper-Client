@@ -2,6 +2,7 @@ import type { Application, DownloadLink, FileData } from "../types/auth";
 import { api } from "../services/api";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import FileUploader from "./FileUploader";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -49,12 +50,6 @@ export default function Applications({
     }));
   };
 
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setEditFiles(Array.from(e.target.files));
-    }
-  };
-
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(null);
@@ -99,6 +94,7 @@ export default function Applications({
       } else {
         await api.updateApplication(auth.accessToken, appId, editFormData);
       }
+
       if (onApplicationUpdated && hasTextChanges) {
         onApplicationUpdated({ id: appId, ...editFormData });
       }
@@ -412,127 +408,15 @@ export default function Applications({
                     <div
                       style={{
                         marginTop: "20px",
-                        padding: "15px",
-                        backgroundColor: "#f0f8ff",
-                        borderRadius: "8px",
-                        border: "2px dashed #007bff",
                       }}
                     >
-                      <label
-                        htmlFor={`edit-files-${app.id}`}
-                        style={{
-                          display: "block",
-                          marginBottom: "10px",
-                          fontWeight: "bold",
-                          fontSize: "1rem",
-                          color: "#0056b3",
-                        }}
-                      >
-                        📎 Добавить новые файлы (можно несколько)
-                      </label>
-
-                      <input
-                        type="file"
-                        id={`edit-files-${app.id}`}
-                        multiple
-                        onChange={handleFilesChange}
+                      <FileUploader
+                        onFilesChange={setEditFiles}
+                        initialFiles={editFiles}
                         disabled={isUpdating}
-                        style={{
-                          display: "block",
-                          width: "100%",
-                          padding: "10px",
-                          border:
-                            editFiles.length > 0
-                              ? "2px solid #28a745"
-                              : "2px solid #007bff",
-                          borderRadius: "8px",
-                          backgroundColor:
-                            editFiles.length > 0 ? "#e6ffed" : "white",
-                          cursor: isUpdating ? "not-allowed" : "pointer",
-                          fontSize: "1rem",
-                        }}
+                        label="📎 Добавить новые файлы (можно несколько)"
+                        maxHeight="140px"
                       />
-
-                      {editFiles.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: "15px",
-                            padding: "12px",
-                            backgroundColor: "#e9f7ff",
-                            border: "1px solid #b3e0ff",
-                            borderRadius: "6px",
-                          }}
-                        >
-                          <strong style={{ color: "#0056b3" }}>
-                            Выбрано новых файлов: {editFiles.length}
-                          </strong>
-                          <ul
-                            style={{
-                              margin: "10px 0 0 0",
-                              paddingLeft: "20px",
-                              listStyle: "disc",
-                              maxHeight: "140px",
-                              overflowY: "auto",
-                            }}
-                          >
-                            {editFiles.map((file, index) => (
-                              <li
-                                key={index}
-                                style={{
-                                  marginBottom: "6px",
-                                  wordBreak: "break-all",
-                                  color: "#333",
-                                }}
-                              >
-                                {file.name}
-                                <span
-                                  style={{
-                                    color: "#666",
-                                    fontSize: "0.85rem",
-                                    marginLeft: "8px",
-                                  }}
-                                >
-                                  ({(file.size / 1024).toFixed(1)} KB)
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditFiles([]);
-                            }}
-                            style={{
-                              marginTop: "12px",
-                              padding: "6px 12px",
-                              backgroundColor: "#ff4d4f",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "0.9rem",
-                            }}
-                          >
-                            Очистить все новые файлы
-                          </button>
-                        </div>
-                      )}
-
-                      {editFiles.length === 0 && !isUpdating && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            color: "#666",
-                            fontSize: "0.9rem",
-                            fontStyle: "italic",
-                          }}
-                        >
-                          🔹 Файлы не выбраны (можно выбрать несколько,
-                          удерживая Ctrl/Cmd)
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

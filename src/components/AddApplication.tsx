@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import type { Application, User } from "../types/auth";
+import FileUploader from "./FileUploader";
 
 interface AddApplicationProps {
   onApplicationAdded?: (application: Application) => void;
@@ -25,7 +26,7 @@ export default function AddApplication({
     quantity: "",
     comment: "",
   });
-  const [files, setFiles] = useState<File[]>([]); // ← изменено с File | null
+  const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,12 +57,6 @@ export default function AddApplication({
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles(Array.from(e.target.files));
-    }
   };
 
   const resetForm = () => {
@@ -116,7 +111,6 @@ export default function AddApplication({
         formDataToSend.append("quantity", formData.quantity);
       if (formData.comment) formDataToSend.append("comment", formData.comment);
 
-      // Добавляем все выбранные файлы
       files.forEach((file) => {
         formDataToSend.append("files", file);
       });
@@ -356,111 +350,11 @@ export default function AddApplication({
               </select>
             </div>
 
-            {/* Блок множественной загрузки файлов */}
-            <div style={{ marginBottom: "20px" }}>
-              <label
-                htmlFor="files"
-                style={{
-                  display: "block",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
-                  fontSize: "1rem",
-                }}
-              >
-                Прикрепить файлы (можно несколько)
-              </label>
-
-              <input
-                type="file"
-                id="files"
-                multiple
-                onChange={handleFilesChange}
-                disabled={loading}
-                style={{
-                  display: "block",
-                  width: "100%",
-                  padding: "10px",
-                  border:
-                    files.length > 0
-                      ? "2px solid #28a745"
-                      : "2px dashed #007bff",
-                  borderRadius: "8px",
-                  backgroundColor: files.length > 0 ? "#e6ffed" : "#f0f8ff",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  fontSize: "1rem",
-                }}
-              />
-
-              {files.length > 0 && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "12px",
-                    backgroundColor: "#e9f7ff",
-                    border: "1px solid #b3e0ff",
-                    borderRadius: "6px",
-                    fontSize: "0.95rem",
-                  }}
-                >
-                  <strong>Выбрано файлов: {files.length}</strong>
-                  <ul
-                    style={{
-                      margin: "8px 0 0 0",
-                      paddingLeft: "20px",
-                      listStyle: "disc",
-                      maxHeight: "140px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {files.map((file, index) => (
-                      <li
-                        key={index}
-                        style={{
-                          marginBottom: "6px",
-                          wordBreak: "break-all",
-                        }}
-                      >
-                        {file.name}
-                        <span style={{ color: "#555", fontSize: "0.85rem" }}>
-                          {" "}
-                          ({(file.size / 1024).toFixed(1)} KB)
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <button
-                    type="button"
-                    onClick={() => setFiles([])}
-                    style={{
-                      marginTop: "10px",
-                      padding: "6px 12px",
-                      backgroundColor: "#ff4d4f",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Очистить все файлы
-                  </button>
-                </div>
-              )}
-
-              {files.length === 0 && !loading && (
-                <div
-                  style={{
-                    marginTop: "8px",
-                    color: "#777",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Файлы не выбраны (можно выбрать сразу несколько — Ctrl /
-                  Shift)
-                </div>
-              )}
-            </div>
+            <FileUploader
+              onFilesChange={setFiles}
+              disabled={loading}
+              label="Прикрепить файлы (можно несколько)"
+            />
 
             {error && (
               <div
