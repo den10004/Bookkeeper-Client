@@ -9,18 +9,15 @@ export default function Account() {
 
   return (
     <div className="account__block">
-      <ul style={{ display: "grid", gap: "0" }}>
+      <ul>
         <li>
           <strong>Email:</strong> {auth.user?.email}
         </li>
         <li>
-          <strong>ID:</strong> {auth.user?.id}
+          <strong>Имя:</strong> {auth.user?.username}
         </li>
         <li>
-          <strong>Username:</strong> {auth.user?.username}
-        </li>
-        <li>
-          <strong>Role:</strong> {auth.user?.role}
+          <strong>Роль:</strong> {auth.user?.role}
         </li>
       </ul>
 

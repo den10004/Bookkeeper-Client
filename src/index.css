@@ -67,7 +67,7 @@ button {
 }
 
 .logout-btn {
-  background: #d32f2f;
+  background: var(--red);
   width: auto;
   padding: 8px 16px;
 }
@@ -125,6 +125,14 @@ table {
 
 .account__block>button {
   background-color: var(--blue);
+}
+
+.account__block>ul {
+  display: grid;
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
+  row-gap: 10px;
+  column-gap: 50px;
 }
 
 /******Cards ******************/

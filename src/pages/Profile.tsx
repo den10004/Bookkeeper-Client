@@ -64,18 +64,7 @@ export default function Profile() {
   };
 
   if (auth.isLoading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "16px",
-        }}
-      >
-        Проверка авторизации...
-      </div>
-    );
+    return <div>Проверка авторизации...</div>;
   }
 
   if (!auth.isAuthenticated) {
