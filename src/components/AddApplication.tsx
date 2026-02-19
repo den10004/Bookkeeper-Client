@@ -5,10 +5,12 @@ import type { Application, User } from "../types/auth";
 
 interface AddApplicationProps {
   onApplicationAdded?: (application: Application) => void;
+  onApplicationsUpdate?: () => void;
 }
 
 export default function AddApplication({
   onApplicationAdded,
+  onApplicationsUpdate,
 }: AddApplicationProps) {
   const { auth } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -60,6 +62,24 @@ export default function AddApplication({
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      organization: "",
+      assignedAccountantId: "",
+      cost: "",
+      quantity: "",
+      comment: "",
+    });
+    setFile(null);
+    setError(null);
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
+    resetForm();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,56 +138,30 @@ export default function AddApplication({
         );
       }
 
-      // Добавляем информацию о создателе и назначенном бухгалтере для локального обновления
-      const enrichedApplication: Application = {
-        ...newApplication,
-        // Если API не возвращает полные данные о создателе и бухгалтере,
-        // добавляем их из локальных данных
-        Creator: auth.user || newApplication.Creator,
-        AssignedAccountant:
-          accountants.find((acc) => acc.id === formData.assignedAccountantId) ||
-          newApplication.AssignedAccountant,
-        // Добавляем текущую дату, если API не возвращает
-        createdAt: newApplication.createdAt || new Date().toISOString(),
-        // Добавляем информацию о файлах
-        files: file
-          ? [
-              {
-                original: file.name,
-                size: file.size,
-                // Другие поля файла, если нужны
-              },
-            ]
-          : newApplication.files || [],
-      };
-
-      // Вызываем колбэк с обогащенными данными
+      // Оптимистичное добавление в список
       if (onApplicationAdded) {
-        onApplicationAdded(enrichedApplication);
+        onApplicationAdded(newApplication);
       }
 
-      // Сбрасываем форму
-      setFormData({
-        name: "",
-        organization: "",
-        assignedAccountantId: "",
-        cost: "",
-        quantity: "",
-        comment: "",
-      });
-      setFile(null);
+      resetForm();
       setIsOpen(false);
+
+      // Можно оставить как запасной вариант
+      if (onApplicationsUpdate) {
+        onApplicationsUpdate();
+      }
     } catch (err) {
       console.error("Ошибка при создании заявки:", err);
       setError(
         err instanceof Error ? err.message : "Ошибка при создании заявки",
       );
+      // При ошибке можно вызвать onApplicationsUpdate для синхронизации
+      if (onApplicationsUpdate) onApplicationsUpdate();
     } finally {
       setLoading(false);
     }
   };
 
-  // Остальной JSX без изменений...
   return (
     <div style={{ marginBottom: "20px" }}>
       <button
@@ -202,6 +196,7 @@ export default function AddApplication({
           }}
         >
           <form onSubmit={handleSubmit}>
+            {/* Поля формы остаются без изменений */}
             <div style={{ marginBottom: "15px" }}>
               <label
                 htmlFor="name"
@@ -267,7 +262,7 @@ export default function AddApplication({
                   fontWeight: "bold",
                 }}
               >
-                cost
+                Стоимость лида
               </label>
               <input
                 type="number"
@@ -277,7 +272,6 @@ export default function AddApplication({
                 step="any"
                 value={formData.cost}
                 onChange={handleInputChange}
-                required
                 style={{
                   width: "100%",
                   padding: "8px",
@@ -296,7 +290,7 @@ export default function AddApplication({
                   fontWeight: "bold",
                 }}
               >
-                quantity
+                Количество лидов
               </label>
               <input
                 type="number"
@@ -306,7 +300,6 @@ export default function AddApplication({
                 step="any"
                 value={formData.quantity}
                 onChange={handleInputChange}
-                required
                 style={{
                   width: "100%",
                   padding: "8px",
@@ -351,7 +344,7 @@ export default function AddApplication({
                   fontWeight: "bold",
                 }}
               >
-                бухгалтер *
+                Бухгалтер *
               </label>
               <select
                 id="assignedAccountantId"
@@ -449,19 +442,7 @@ export default function AddApplication({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  setError(null);
-                  setFormData({
-                    name: "",
-                    organization: "",
-                    assignedAccountantId: "",
-                    cost: "",
-                    quantity: "",
-                    comment: "",
-                  });
-                  setFile(null);
-                }}
+                onClick={handleCancel}
                 style={{
                   padding: "10px 20px",
                   backgroundColor: "#6c757d",

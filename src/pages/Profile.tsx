@@ -14,6 +14,24 @@ export default function Profile() {
   const [loadingApps, setLoadingApps] = useState(true);
   const [appsError, setAppsError] = useState<string | null>(null);
 
+  const fetchApplications = async () => {
+    if (!auth.accessToken) return;
+
+    try {
+      setLoadingApps(true);
+      setAppsError(null);
+      const data = await api.getApplications(auth.accessToken);
+      setApplications(data);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Ошибка при загрузке заявок";
+      setAppsError(msg);
+      console.error("Error fetching applications:", err);
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
   useEffect(() => {
     if (auth.isLoading) return;
 
@@ -22,24 +40,28 @@ export default function Profile() {
       return;
     }
 
-    const fetchApplications = async () => {
-      try {
-        setLoadingApps(true);
-        setAppsError(null);
-        const data = await api.getApplications(auth.accessToken!);
-        setApplications(data);
-      } catch (err) {
-        setAppsError(
-          err instanceof Error ? err.message : "Ошибка при загрузке заявок",
-        );
-        console.error("Error fetching applications:", err);
-      } finally {
-        setLoadingApps(false);
-      }
-    };
-
     fetchApplications();
   }, [auth.isAuthenticated, auth.isLoading, auth.accessToken, navigate]);
+
+  // Функции для оптимистичного обновления
+  const addApplicationOptimistic = (newApp: Application) => {
+    setApplications((prev) => [newApp, ...prev]);
+  };
+
+  const updateApplicationOptimistic = (
+    updatedFields: Partial<Application> & { id: string },
+  ) => {
+    setApplications((prev) =>
+      prev.map((app) =>
+        app.id === updatedFields.id ? { ...app, ...updatedFields } : app,
+      ),
+    );
+  };
+
+  // Функция для полной перезагрузки (можно вызвать вручную или при ошибке)
+  const refreshApplications = () => {
+    fetchApplications();
+  };
 
   if (auth.isLoading) {
     return (
@@ -106,11 +128,20 @@ export default function Profile() {
           Выйти
         </button>
       </div>
-      {auth.user?.role === "manager" && <AddApplication />}
+
+      {auth.user?.role === "manager" && (
+        <AddApplication
+          onApplicationAdded={addApplicationOptimistic}
+          onApplicationsUpdate={refreshApplications}
+        />
+      )}
+
       <Applications
         loadingApps={loadingApps}
         appsError={appsError}
         applications={applications}
+        onApplicationUpdated={updateApplicationOptimistic}
+        onApplicationsUpdate={refreshApplications} // fallback
       />
 
       {auth.user?.role === "director" && <Users />}

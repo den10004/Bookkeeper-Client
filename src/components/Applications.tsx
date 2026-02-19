@@ -1,12 +1,15 @@
 import type { Application, DownloadLink, FileData } from "../types/auth";
 import { api } from "../services/api";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 interface ApplicationsProps {
   loadingApps: boolean;
   appsError: string | null;
   applications: Application[];
+  onApplicationUpdated?: (
+    updatedFields: Partial<Application> & { id: string },
+  ) => void;
   onApplicationsUpdate?: () => void;
 }
 
@@ -14,18 +17,13 @@ export default function Applications({
   loadingApps,
   appsError,
   applications,
+  onApplicationUpdated,
   onApplicationsUpdate,
 }: ApplicationsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Application>>({});
   const [isUpdating, setIsUpdating] = useState(false);
-  const [localApplications, setLocalApplications] =
-    useState<Application[]>(applications);
   const { auth } = useAuth();
-
-  useEffect(() => {
-    setLocalApplications(applications);
-  }, [applications]);
 
   const startEditing = (app: Application, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -43,10 +41,10 @@ export default function Applications({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     field: keyof Application,
   ) => {
-    setEditFormData({
-      ...editFormData,
+    setEditFormData((prev) => ({
+      ...prev,
       [field]: e.target.value,
-    });
+    }));
   };
 
   const cancelEditing = (e: React.MouseEvent) => {
@@ -63,26 +61,19 @@ export default function Applications({
     }
 
     setIsUpdating(true);
-    try {
-      // Обновляем только текстовые поля
-      await api.updateApplication(auth.accessToken, appId, editFormData);
 
-      // Локально обновляем данные
-      setLocalApplications((prevApps) =>
-        prevApps.map((app) =>
-          app.id === appId ? { ...app, ...editFormData } : app,
-        ),
-      );
+    try {
+      if (onApplicationUpdated) {
+        onApplicationUpdated({ id: appId, ...editFormData });
+      }
+
+      await api.updateApplication(auth.accessToken, appId, editFormData);
 
       setEditingId(null);
       setEditFormData({});
-
-      // Опционально вызываем родительское обновление для синхронизации
-      if (onApplicationsUpdate) {
-        onApplicationsUpdate();
-      }
     } catch (error) {
       console.error("Ошибка при обновлении заявки:", error);
+      if (onApplicationsUpdate) onApplicationsUpdate();
     } finally {
       setIsUpdating(false);
     }
@@ -116,7 +107,7 @@ export default function Applications({
   ) => {
     const isEditing = editingId === app.id;
     const value = isEditing ? editFormData[field] : app[field];
-    const displayValue = value || "Не указано";
+    const displayValue = value ?? "Не указано";
 
     if (isEditing) {
       if (type === "textarea") {
@@ -165,7 +156,7 @@ export default function Applications({
           </label>
           <input
             type={type}
-            value={(value as string) || ""}
+            value={(value as string | number) ?? ""}
             onChange={(e) => handleInputChange(e, field)}
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -218,7 +209,7 @@ export default function Applications({
         >
           <p>{appsError}</p>
         </div>
-      ) : localApplications.length === 0 ? (
+      ) : applications.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -232,7 +223,7 @@ export default function Applications({
         </div>
       ) : (
         <div style={{ display: "grid", gap: "15px" }}>
-          {localApplications.map((app) => (
+          {applications.map((app) => (
             <div
               key={app.id}
               style={{
@@ -244,12 +235,10 @@ export default function Applications({
                 transition: "box-shadow 0.3s, border-color 0.3s",
                 cursor: "pointer",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "none";
-              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)")
+              }
+              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
             >
               <div
                 style={{
@@ -262,23 +251,11 @@ export default function Applications({
                 {renderEditableField(app, "name", "Название", "text")}
               </div>
 
-              <p
-                style={{
-                  margin: "10px 0",
-                  color: "#555",
-                  lineHeight: "1.5",
-                }}
-              >
+              <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
                 Создано: {app.Creator?.username || "Не указано"}
               </p>
 
-              <p
-                style={{
-                  margin: "10px 0",
-                  color: "#555",
-                  lineHeight: "1.5",
-                }}
-              >
+              <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
                 Назначено: {app.AssignedAccountant?.username || "Не назначено"}
               </p>
 
@@ -313,8 +290,7 @@ export default function Applications({
                 <p style={{ marginBottom: "5px", fontWeight: "500" }}>Файлы:</p>
                 {app.files && app.files.length > 0 ? (
                   app.files.map((file, index) => {
-                    const downloadLink =
-                      app.downloadLinks && app.downloadLinks[index];
+                    const downloadLink = app.downloadLinks?.[index];
 
                     return (
                       <div
@@ -329,14 +305,13 @@ export default function Applications({
                           cursor: downloadLink ? "pointer" : "default",
                           transition: "background-color 0.2s",
                         }}
-                        onMouseEnter={(e) => {
-                          if (downloadLink) {
-                            e.currentTarget.style.backgroundColor = "#e9e9e9";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#f5f5f5";
-                        }}
+                        onMouseEnter={(e) =>
+                          downloadLink &&
+                          (e.currentTarget.style.backgroundColor = "#e9e9e9")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                        }
                       >
                         <p style={{ margin: 0, fontWeight: "500" }}>
                           {file.original}

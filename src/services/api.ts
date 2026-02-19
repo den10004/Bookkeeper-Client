@@ -76,10 +76,6 @@ class ApiService {
         body: isFormData ? data : JSON.stringify(data),
       });
 
-      if (!isFormData) {
-        console.log("Отправка JSON:", data);
-      }
-
       return this.handleResponse<Application>(response);
     } catch (error) {
       console.error("Ошибка при создании заявки:", error);
