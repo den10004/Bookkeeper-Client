@@ -149,7 +149,7 @@ export default function Applications({
   ) => {
     const isEditing = editingId === app.id;
     const value = isEditing ? editFormData[field] : app[field];
-    const displayValue = value ?? "Не указано";
+    const displayValue: any = value ?? "Не указано";
 
     if (isEditing) {
       if (type === "textarea") {

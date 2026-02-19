@@ -42,7 +42,7 @@ export interface DownloadLink {
 }
 
 export interface Application {
-  id: string | number;
+  id: string;
   name?: string;
   Creator?: {
     username?: string;
