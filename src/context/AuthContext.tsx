@@ -142,7 +142,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      console.log("Attempting login...");
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {

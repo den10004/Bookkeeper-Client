@@ -1,4 +1,3 @@
-// ApplicationCard.tsx
 import type { Application, DownloadLink, FileData } from "../types/auth";
 import { api } from "../services/api";
 import { useState } from "react";
@@ -22,7 +21,44 @@ export default function ApplicationCard({
   const [editFormData, setEditFormData] = useState<Partial<Application>>({});
   const [editFiles, setEditFiles] = useState<File[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { auth } = useAuth();
+
+  const deleteCard = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const confirmDelete = window.confirm(
+      "Вы действительно хотите удалить заявку?",
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    if (!auth.accessToken) {
+      console.error("Токен не найден");
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      await api.deleteApplication(auth.accessToken, application.id);
+
+      if (onApplicationsUpdate) {
+        await onApplicationsUpdate();
+      }
+    } catch (error) {
+      console.error("Ошибка при удалении заявки:", error);
+      alert("Ошибка при удалении заявки. Пожалуйста, попробуйте снова.");
+
+      if (onApplicationsUpdate) {
+        await onApplicationsUpdate();
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -235,6 +271,8 @@ export default function ApplicationCard({
         backgroundColor: "#f9f9f9",
         transition: "box-shadow 0.3s, border-color 0.3s",
         cursor: "pointer",
+        opacity: isDeleting ? 0.6 : 1,
+        pointerEvents: isDeleting ? "none" : "auto",
       }}
       onMouseEnter={(e) =>
         (e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)")
@@ -432,6 +470,26 @@ export default function ApplicationCard({
             }}
           >
             Редактировать
+          </button>
+        )}
+        {auth.user && auth.user.role === "director" && (
+          <button
+            onClick={deleteCard}
+            disabled={isDeleting || isEditing}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: isDeleting ? "#6c757d" : "#eb1b37",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: isDeleting || isEditing ? "not-allowed" : "pointer",
+              fontSize: "0.95rem",
+              fontWeight: "500",
+              opacity: isDeleting || isEditing ? 0.7 : 1,
+              marginLeft: "auto",
+            }}
+          >
+            {isDeleting ? "⏳ Удаление..." : "🗑️ Удалить"}
           </button>
         )}
       </div>

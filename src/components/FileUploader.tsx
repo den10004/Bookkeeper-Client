@@ -25,9 +25,7 @@ export default function FileUploader({
   const [inputKey, setInputKey] = useState(Date.now());
   const initialFilesRef = useRef(initialFiles);
 
-  // Синхронизация с initialFiles только при реальных изменениях
   useEffect(() => {
-    // Проверяем, изменились ли файлы (по количеству или по содержимому)
     const haveFilesChanged =
       initialFiles.length !== initialFilesRef.current.length ||
       initialFiles.some((file, index) => {
@@ -59,7 +57,6 @@ export default function FileUploader({
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
-    // Сбрасываем input, чтобы можно было выбрать тот же файл снова
     setInputKey(Date.now());
   };
 

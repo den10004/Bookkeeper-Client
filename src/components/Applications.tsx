@@ -1,4 +1,3 @@
-// Applications.tsx (обновленный)
 import type { Application } from "../types/auth";
 import ApplicationCard from "./ApplicationCard";
 
