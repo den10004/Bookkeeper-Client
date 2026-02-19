@@ -22,6 +22,7 @@ export default function Applications({
 }: ApplicationsProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<Application>>({});
+  const [editFiles, setEditFiles] = useState<File[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const { auth } = useAuth();
 
@@ -35,6 +36,7 @@ export default function Applications({
       cost: app.cost,
       comment: app.comment,
     });
+    setEditFiles([]);
   };
 
   const handleInputChange = (
@@ -47,10 +49,17 @@ export default function Applications({
     }));
   };
 
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setEditFiles(Array.from(e.target.files));
+    }
+  };
+
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingId(null);
     setEditFormData({});
+    setEditFiles([]);
   };
 
   const saveChanges = async (appId: string, e: React.MouseEvent) => {
@@ -60,20 +69,53 @@ export default function Applications({
       return;
     }
 
+    const hasTextChanges = Object.keys(editFormData).length > 0;
+    const hasFiles = editFiles.length > 0;
+
+    if (!hasTextChanges && !hasFiles) {
+      setEditingId(null);
+      setEditFormData({});
+      setEditFiles([]);
+      return;
+    }
+
     setIsUpdating(true);
 
     try {
-      if (onApplicationUpdated) {
+      if (hasFiles) {
+        const formData = new FormData();
+
+        Object.entries(editFormData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+
+        editFiles.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        await api.updateApplication(auth.accessToken, appId, formData);
+      } else {
+        await api.updateApplication(auth.accessToken, appId, editFormData);
+      }
+      if (onApplicationUpdated && hasTextChanges) {
         onApplicationUpdated({ id: appId, ...editFormData });
       }
 
-      await api.updateApplication(auth.accessToken, appId, editFormData);
+      if (onApplicationsUpdate) {
+        await onApplicationsUpdate();
+      }
 
       setEditingId(null);
       setEditFormData({});
+      setEditFiles([]);
     } catch (error) {
-      console.error("Ошибка при обновлении заявки:", error);
-      if (onApplicationsUpdate) onApplicationsUpdate();
+      alert("Ошибка при обновлении заявки. Пожалуйста, попробуйте снова.");
+
+      if (onApplicationsUpdate) {
+        await onApplicationsUpdate();
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -223,201 +265,347 @@ export default function Applications({
         </div>
       ) : (
         <div style={{ display: "grid", gap: "15px" }}>
-          {applications.map((app) => (
-            <div
-              key={app.id}
-              style={{
-                padding: "20px",
-                border:
-                  editingId === app.id ? "2px solid #28a745" : "1px solid #ddd",
-                borderRadius: "8px",
-                backgroundColor: "#f9f9f9",
-                transition: "box-shadow 0.3s, border-color 0.3s",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-            >
+          {applications.map((app) => {
+            const isEditing = editingId === app.id;
+
+            return (
               <div
+                key={app.id}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "start",
-                  marginBottom: "10px",
+                  padding: "20px",
+                  border: isEditing ? "2px solid #28a745" : "1px solid #ddd",
+                  borderRadius: "8px",
+                  backgroundColor: "#f9f9f9",
+                  transition: "box-shadow 0.3s, border-color 0.3s",
+                  cursor: "pointer",
                 }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.boxShadow =
+                    "0 4px 8px rgba(0,0,0,0.1)")
+                }
+                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
               >
-                {renderEditableField(app, "name", "Название", "text")}
-              </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "start",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {renderEditableField(app, "name", "Название", "text")}
+                </div>
 
-              <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
-                Создано: {app.Creator?.username || "Не указано"}
-              </p>
+                <p
+                  style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}
+                >
+                  Создано: {app.Creator?.username || "Не указано"}
+                </p>
 
-              <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
-                Назначено: {app.AssignedAccountant?.username || "Не назначено"}
-              </p>
+                <p
+                  style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}
+                >
+                  Назначено:{" "}
+                  {app.AssignedAccountant?.username || "Не назначено"}
+                </p>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  fontSize: "0.85rem",
-                  color: "#777",
-                  marginTop: "10px",
-                }}
-              >
-                <span>
-                  📅 Создано:{" "}
-                  {app.createdAt
-                    ? new Date(app.createdAt).toLocaleDateString()
-                    : "Дата не указана"}
-                </span>
-              </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "20px",
+                    fontSize: "0.85rem",
+                    color: "#777",
+                    marginTop: "10px",
+                  }}
+                >
+                  <span>
+                    📅 Создано:{" "}
+                    {app.createdAt
+                      ? new Date(app.createdAt).toLocaleDateString()
+                      : "Дата не указана"}
+                  </span>
+                </div>
 
-              {renderEditableField(app, "organization", "Организация")}
-              {renderEditableField(
-                app,
-                "quantity",
-                "Количество лидов",
-                "number",
-              )}
-              {renderEditableField(app, "cost", "Стоимость лида", "text")}
-              {renderEditableField(app, "comment", "Комментарии", "textarea")}
+                {renderEditableField(app, "organization", "Организация")}
+                {renderEditableField(
+                  app,
+                  "quantity",
+                  "Количество лидов",
+                  "number",
+                )}
+                {renderEditableField(app, "cost", "Стоимость лида", "text")}
+                {renderEditableField(app, "comment", "Комментарии", "textarea")}
 
-              <div style={{ marginTop: "15px" }}>
-                <p style={{ marginBottom: "5px", fontWeight: "500" }}>Файлы:</p>
-                {app.files && app.files.length > 0 ? (
-                  app.files.map((file, index) => {
-                    const downloadLink = app.downloadLinks?.[index];
+                <div style={{ marginTop: "15px" }}>
+                  <p style={{ marginBottom: "5px", fontWeight: "500" }}>
+                    {isEditing ? "Текущие файлы:" : "Файлы:"}
+                  </p>
 
-                    return (
-                      <div
-                        key={index}
-                        onClick={(e) => downloadFile(file, downloadLink, e)}
-                        style={{
-                          padding: "8px",
-                          marginBottom: "5px",
-                          backgroundColor: "#f5f5f5",
-                          borderRadius: "4px",
-                          border: "1px solid #ddd",
-                          cursor: downloadLink ? "pointer" : "default",
-                          transition: "background-color 0.2s",
-                        }}
-                        onMouseEnter={(e) =>
-                          downloadLink &&
-                          (e.currentTarget.style.backgroundColor = "#e9e9e9")
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#f5f5f5")
-                        }
-                      >
-                        <p style={{ margin: 0, fontWeight: "500" }}>
-                          {file.original}
-                          {downloadLink && " ⬇️"}
-                        </p>
-                        <p
+                  {app.files && app.files.length > 0 ? (
+                    app.files.map((file, index) => {
+                      const downloadLink = app.downloadLinks?.[index];
+
+                      return (
+                        <div
+                          key={index}
+                          onClick={(e) => downloadFile(file, downloadLink, e)}
                           style={{
-                            margin: "3px 0 0 0",
-                            fontSize: "12px",
-                            color: "#666",
+                            padding: "8px",
+                            marginBottom: "5px",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "4px",
+                            border: "1px solid #ddd",
+                            cursor: downloadLink ? "pointer" : "default",
+                            transition: "background-color 0.2s",
+                            opacity: isEditing ? 0.7 : 1,
                           }}
+                          onMouseEnter={(e) =>
+                            downloadLink &&
+                            (e.currentTarget.style.backgroundColor = "#e9e9e9")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.backgroundColor = "#f5f5f5")
+                          }
                         >
-                          Размер: {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                        {!downloadLink && (
+                          <p style={{ margin: 0, fontWeight: "500" }}>
+                            {file.original}
+                            {downloadLink && " ⬇️"}
+                          </p>
                           <p
                             style={{
                               margin: "3px 0 0 0",
                               fontSize: "12px",
-                              color: "#ff6b6b",
+                              color: "#666",
                             }}
                           >
-                            Ссылка для скачивания недоступна
+                            Размер: {(file.size / 1024).toFixed(2)} KB
                           </p>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p
-                    style={{
-                      color: "#777",
-                      fontStyle: "italic",
-                      padding: "8px",
-                      backgroundColor: "#f5f5f5",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    Файлов нет
-                  </p>
-                )}
-              </div>
+                          {!downloadLink && (
+                            <p
+                              style={{
+                                margin: "3px 0 0 0",
+                                fontSize: "12px",
+                                color: "#ff6b6b",
+                              }}
+                            >
+                              Ссылка для скачивания недоступна
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p
+                      style={{
+                        color: "#777",
+                        fontStyle: "italic",
+                        padding: "8px",
+                        backgroundColor: "#f5f5f5",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      Файлов нет
+                    </p>
+                  )}
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginTop: "15px",
-                  borderTop: "1px solid #eee",
-                  paddingTop: "15px",
-                }}
-              >
-                {editingId === app.id ? (
-                  <>
-                    <button
-                      onClick={(e) => saveChanges(app.id, e)}
-                      disabled={isUpdating}
+                  {isEditing && (
+                    <div
                       style={{
-                        padding: "6px 12px",
-                        backgroundColor: isUpdating ? "#6c757d" : "#28a745",
+                        marginTop: "20px",
+                        padding: "15px",
+                        backgroundColor: "#f0f8ff",
+                        borderRadius: "8px",
+                        border: "2px dashed #007bff",
+                      }}
+                    >
+                      <label
+                        htmlFor={`edit-files-${app.id}`}
+                        style={{
+                          display: "block",
+                          marginBottom: "10px",
+                          fontWeight: "bold",
+                          fontSize: "1rem",
+                          color: "#0056b3",
+                        }}
+                      >
+                        📎 Добавить новые файлы (можно несколько)
+                      </label>
+
+                      <input
+                        type="file"
+                        id={`edit-files-${app.id}`}
+                        multiple
+                        onChange={handleFilesChange}
+                        disabled={isUpdating}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          padding: "10px",
+                          border:
+                            editFiles.length > 0
+                              ? "2px solid #28a745"
+                              : "2px solid #007bff",
+                          borderRadius: "8px",
+                          backgroundColor:
+                            editFiles.length > 0 ? "#e6ffed" : "white",
+                          cursor: isUpdating ? "not-allowed" : "pointer",
+                          fontSize: "1rem",
+                        }}
+                      />
+
+                      {editFiles.length > 0 && (
+                        <div
+                          style={{
+                            marginTop: "15px",
+                            padding: "12px",
+                            backgroundColor: "#e9f7ff",
+                            border: "1px solid #b3e0ff",
+                            borderRadius: "6px",
+                          }}
+                        >
+                          <strong style={{ color: "#0056b3" }}>
+                            Выбрано новых файлов: {editFiles.length}
+                          </strong>
+                          <ul
+                            style={{
+                              margin: "10px 0 0 0",
+                              paddingLeft: "20px",
+                              listStyle: "disc",
+                              maxHeight: "140px",
+                              overflowY: "auto",
+                            }}
+                          >
+                            {editFiles.map((file, index) => (
+                              <li
+                                key={index}
+                                style={{
+                                  marginBottom: "6px",
+                                  wordBreak: "break-all",
+                                  color: "#333",
+                                }}
+                              >
+                                {file.name}
+                                <span
+                                  style={{
+                                    color: "#666",
+                                    fontSize: "0.85rem",
+                                    marginLeft: "8px",
+                                  }}
+                                >
+                                  ({(file.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditFiles([]);
+                            }}
+                            style={{
+                              marginTop: "12px",
+                              padding: "6px 12px",
+                              backgroundColor: "#ff4d4f",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            Очистить все новые файлы
+                          </button>
+                        </div>
+                      )}
+
+                      {editFiles.length === 0 && !isUpdating && (
+                        <div
+                          style={{
+                            marginTop: "10px",
+                            color: "#666",
+                            fontSize: "0.9rem",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          🔹 Файлы не выбраны (можно выбрать несколько,
+                          удерживая Ctrl/Cmd)
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    marginTop: "15px",
+                    borderTop: "1px solid #eee",
+                    paddingTop: "15px",
+                  }}
+                >
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={(e) => saveChanges(app.id, e)}
+                        disabled={isUpdating}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: isUpdating ? "#6c757d" : "#28a745",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isUpdating ? "not-allowed" : "pointer",
+                          fontSize: "0.95rem",
+                          fontWeight: "500",
+                          opacity: isUpdating ? 0.7 : 1,
+                        }}
+                      >
+                        {isUpdating
+                          ? "⏳ Сохранение..."
+                          : "💾 Сохранить изменения"}
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        disabled={isUpdating}
+                        style={{
+                          padding: "8px 16px",
+                          backgroundColor: "#6c757d",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isUpdating ? "not-allowed" : "pointer",
+                          fontSize: "0.95rem",
+                          fontWeight: "500",
+                          opacity: isUpdating ? 0.7 : 1,
+                        }}
+                      >
+                        Отмена
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={(e) => startEditing(app, e)}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#28a745",
                         color: "white",
                         border: "none",
                         borderRadius: "4px",
-                        cursor: isUpdating ? "not-allowed" : "pointer",
-                        fontSize: "0.9rem",
-                        opacity: isUpdating ? 0.7 : 1,
+                        cursor: "pointer",
+                        fontSize: "0.95rem",
+                        fontWeight: "500",
                       }}
                     >
-                      {isUpdating ? "Сохранение..." : "Сохранить"}
+                      Редактировать
                     </button>
-                    <button
-                      onClick={cancelEditing}
-                      disabled={isUpdating}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#6c757d",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: isUpdating ? "not-allowed" : "pointer",
-                        fontSize: "0.9rem",
-                        opacity: isUpdating ? 0.7 : 1,
-                      }}
-                    >
-                      Отмена
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={(e) => startEditing(app, e)}
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Редактировать
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

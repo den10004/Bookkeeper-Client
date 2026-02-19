@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { Application } from "../types/auth";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import Applications from "../components/Applications";
-import type { Application } from "../types/auth";
 import AddApplication from "../components/AddApplication";
+
 import Users from "../components/Users";
 
 export default function Profile() {
@@ -43,7 +44,6 @@ export default function Profile() {
     fetchApplications();
   }, [auth.isAuthenticated, auth.isLoading, auth.accessToken, navigate]);
 
-  // Функции для оптимистичного обновления
   const addApplicationOptimistic = (newApp: Application) => {
     setApplications((prev) => [newApp, ...prev]);
   };
@@ -58,7 +58,6 @@ export default function Profile() {
     );
   };
 
-  // Функция для полной перезагрузки (можно вызвать вручную или при ошибке)
   const refreshApplications = () => {
     fetchApplications();
   };
@@ -141,7 +140,7 @@ export default function Profile() {
         appsError={appsError}
         applications={applications}
         onApplicationUpdated={updateApplicationOptimistic}
-        onApplicationsUpdate={refreshApplications} // fallback
+        onApplicationsUpdate={refreshApplications}
       />
 
       {auth.user?.role === "director" && <Users />}

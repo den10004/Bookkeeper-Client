@@ -86,15 +86,20 @@ class ApiService {
   async updateApplication(
     token: string,
     id: string,
-    data: Partial<Application>,
+    data: Partial<Application> | FormData,
   ): Promise<Application> {
     try {
+      const isFormData = data instanceof FormData;
+
       const response = await fetch(`${API_BASE}/protected/applications/${id}`, {
         method: "PUT",
-        headers: this.getHeaders(token),
+        headers: isFormData
+          ? { Authorization: `Bearer ${token}` }
+          : this.getHeaders(token),
         credentials: "include",
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
       });
+
       return this.handleResponse<Application>(response);
     } catch (error) {
       console.error("Ошибка при обновлении заявки:", error);

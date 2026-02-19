@@ -25,7 +25,7 @@ export default function AddApplication({
     quantity: "",
     comment: "",
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]); // ← изменено с File | null
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -58,9 +58,9 @@ export default function AddApplication({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
     }
   };
 
@@ -73,7 +73,7 @@ export default function AddApplication({
       quantity: "",
       comment: "",
     });
-    setFile(null);
+    setFiles([]);
     setError(null);
   };
 
@@ -103,42 +103,29 @@ export default function AddApplication({
     setError(null);
 
     try {
-      let newApplication: Application;
+      const formDataToSend = new FormData();
 
-      if (file) {
-        const formDataToSend = new FormData();
-        formDataToSend.append("name", formData.name);
-        formDataToSend.append("organization", formData.organization);
-        formDataToSend.append(
-          "assignedAccountantId",
-          formData.assignedAccountantId,
-        );
-        formDataToSend.append("cost", formData.cost);
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("organization", formData.organization);
+      formDataToSend.append(
+        "assignedAccountantId",
+        formData.assignedAccountantId,
+      );
+      if (formData.cost) formDataToSend.append("cost", formData.cost);
+      if (formData.quantity)
         formDataToSend.append("quantity", formData.quantity);
-        formDataToSend.append("comment", formData.comment || "");
+      if (formData.comment) formDataToSend.append("comment", formData.comment);
+
+      // Добавляем все выбранные файлы
+      files.forEach((file) => {
         formDataToSend.append("files", file);
+      });
 
-        newApplication = await api.createApplication(
-          auth.accessToken,
-          formDataToSend,
-        );
-      } else {
-        const applicationData = {
-          name: formData.name,
-          organization: formData.organization,
-          assignedAccountantId: formData.assignedAccountantId,
-          cost: formData.cost,
-          quantity: formData.quantity,
-          comment: formData.comment,
-        };
+      const newApplication = await api.createApplication(
+        auth.accessToken,
+        formDataToSend,
+      );
 
-        newApplication = await api.createApplication(
-          auth.accessToken,
-          applicationData,
-        );
-      }
-
-      // Оптимистичное добавление в список
       if (onApplicationAdded) {
         onApplicationAdded(newApplication);
       }
@@ -146,7 +133,6 @@ export default function AddApplication({
       resetForm();
       setIsOpen(false);
 
-      // Можно оставить как запасной вариант
       if (onApplicationsUpdate) {
         onApplicationsUpdate();
       }
@@ -155,7 +141,6 @@ export default function AddApplication({
       setError(
         err instanceof Error ? err.message : "Ошибка при создании заявки",
       );
-      // При ошибке можно вызвать onApplicationsUpdate для синхронизации
       if (onApplicationsUpdate) onApplicationsUpdate();
     } finally {
       setLoading(false);
@@ -196,7 +181,6 @@ export default function AddApplication({
           }}
         >
           <form onSubmit={handleSubmit}>
-            {/* Поля формы остаются без изменений */}
             <div style={{ marginBottom: "15px" }}>
               <label
                 htmlFor="name"
@@ -372,38 +356,108 @@ export default function AddApplication({
               </select>
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            {/* Блок множественной загрузки файлов */}
+            <div style={{ marginBottom: "20px" }}>
               <label
-                htmlFor="file"
+                htmlFor="files"
                 style={{
                   display: "block",
-                  marginBottom: "5px",
+                  marginBottom: "8px",
                   fontWeight: "bold",
+                  fontSize: "1rem",
                 }}
               >
-                Прикрепить файл
+                Прикрепить файлы (можно несколько)
               </label>
+
               <input
                 type="file"
-                id="file"
-                onChange={handleFileChange}
+                id="files"
+                multiple
+                onChange={handleFilesChange}
+                disabled={loading}
                 style={{
+                  display: "block",
                   width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
-                  backgroundColor: "white",
+                  padding: "10px",
+                  border:
+                    files.length > 0
+                      ? "2px solid #28a745"
+                      : "2px dashed #007bff",
+                  borderRadius: "8px",
+                  backgroundColor: files.length > 0 ? "#e6ffed" : "#f0f8ff",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  fontSize: "1rem",
                 }}
               />
-              {file && (
+
+              {files.length > 0 && (
                 <div
                   style={{
-                    marginTop: "5px",
-                    fontSize: "0.9rem",
-                    color: "#666",
+                    marginTop: "12px",
+                    padding: "12px",
+                    backgroundColor: "#e9f7ff",
+                    border: "1px solid #b3e0ff",
+                    borderRadius: "6px",
+                    fontSize: "0.95rem",
                   }}
                 >
-                  Выбран файл: {file.name}
+                  <strong>Выбрано файлов: {files.length}</strong>
+                  <ul
+                    style={{
+                      margin: "8px 0 0 0",
+                      paddingLeft: "20px",
+                      listStyle: "disc",
+                      maxHeight: "140px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {files.map((file, index) => (
+                      <li
+                        key={index}
+                        style={{
+                          marginBottom: "6px",
+                          wordBreak: "break-all",
+                        }}
+                      >
+                        {file.name}
+                        <span style={{ color: "#555", fontSize: "0.85rem" }}>
+                          {" "}
+                          ({(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    type="button"
+                    onClick={() => setFiles([])}
+                    style={{
+                      marginTop: "10px",
+                      padding: "6px 12px",
+                      backgroundColor: "#ff4d4f",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    Очистить все файлы
+                  </button>
+                </div>
+              )}
+
+              {files.length === 0 && !loading && (
+                <div
+                  style={{
+                    marginTop: "8px",
+                    color: "#777",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  Файлы не выбраны (можно выбрать сразу несколько — Ctrl /
+                  Shift)
                 </div>
               )}
             </div>
