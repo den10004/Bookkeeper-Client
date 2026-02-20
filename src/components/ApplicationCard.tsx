@@ -50,7 +50,6 @@ export default function ApplicationCard({
       }
     } catch (error) {
       console.error("Ошибка при удалении заявки:", error);
-      alert("Ошибка при удалении заявки. Пожалуйста, попробуйте снова.");
 
       if (onApplicationsUpdate) {
         await onApplicationsUpdate();

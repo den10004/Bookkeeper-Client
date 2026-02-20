@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types/auth";
 import { api } from "../services/api";
-import { roles } from "../constants";
+import { errorDictionary, roles } from "../constants";
 
 export default function Users() {
   const { auth } = useAuth();
@@ -77,8 +77,11 @@ export default function Users() {
       setEditingId(null);
       setEditForm({});
       setError(null);
-    } catch (err) {
-      console.error("Ошибка сохранения:", err);
+    } catch (err: any) {
+      const errorText = err?.message;
+      const userMessage = errorDictionary[errorText] || errorText;
+      alert(userMessage);
+      setError(userMessage);
       setError("Не удалось сохранить изменения");
     }
   };
@@ -98,9 +101,12 @@ export default function Users() {
       await api.deleteUser(auth.accessToken, userId);
       setAccountants(accountants.filter((user) => user.id !== Number(userId)));
       setError(null);
-    } catch (err) {
-      console.error("Ошибка удаления:", err);
-      setError("Не удалось удалить пользователя");
+    } catch (err: any) {
+      const errorText = err?.message;
+      const userMessage = errorDictionary[errorText] || errorText;
+      alert(userMessage);
+      console.error("Ошибка удаления:", userMessage);
+      setError(userMessage);
     }
   };
 
@@ -135,7 +141,6 @@ export default function Users() {
       setError("Заполните все поля");
       return;
     }
-
     try {
       const createdUser = await api.createUser(auth.accessToken, newUser);
       const completeUser: User = {
@@ -150,7 +155,7 @@ export default function Users() {
       setNewUser({
         username: "",
         email: "",
-        role: "manager",
+        role: "",
         password: "",
       });
       setError(null);
@@ -222,7 +227,6 @@ export default function Users() {
                 </button>
               </div>
 
-              {/* Форма создания нового пользователя */}
               {isCreating && (
                 <div
                   className="create-user-form"
@@ -288,17 +292,21 @@ export default function Users() {
                     <li className="actions">
                       <button
                         onClick={handleCreateUser}
-                        style={{ background: "var(--green, #4CAF50)" }}
+                        style={{ background: "var(--green)" }}
                       >
                         Сохранить
                       </button>
-                      <button onClick={handleCreateCancel}>Отмена</button>
+                      <button
+                        onClick={handleCreateCancel}
+                        style={{ background: "var(--blue)" }}
+                      >
+                        Отмена
+                      </button>
                     </li>
                   </ul>
                 </div>
               )}
 
-              {/* Заголовки таблицы */}
               <ul
                 style={{
                   display: "flex",
@@ -321,10 +329,9 @@ export default function Users() {
                 </li>
               </ul>
 
-              {/* Убедитесь, что у каждого элемента есть уникальный ключ */}
               {accountants.map((accountant) => (
                 <ul
-                  key={String(accountant.id)} // Явно преобразуем в строку для ключа
+                  key={String(accountant.id)}
                   style={{
                     display: "flex",
                     listStyle: "none",

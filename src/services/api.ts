@@ -152,7 +152,7 @@ class ApiService {
       });
       return this.handleResponse<void>(response);
     } catch (error) {
-      console.error("Ошибка получения пользователей:", error);
+      console.error("Ошибка изменения пользователя пользователей:", error);
       throw error;
     }
   }
@@ -165,9 +165,9 @@ class ApiService {
         credentials: "include",
       });
       return this.handleResponse<void>(response);
-    } catch (error) {
-      console.error("Ошибка при удалении заявки:", error);
-      throw error;
+    } catch (err) {
+      console.error("Ошибка при удаления пользователя:", err);
+      throw err;
     }
   }
 
@@ -182,7 +182,7 @@ class ApiService {
 
       return this.handleResponse<User>(response);
     } catch (error) {
-      console.error("Ошибка при создании заявки:", error);
+      console.error("Ошибка при создании пользователя:", error);
       throw error;
     }
   }
