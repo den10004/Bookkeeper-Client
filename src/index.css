@@ -152,3 +152,25 @@ table {
 .users>button {
   background-color: var(--blue);
 }
+
+.users__list>ul {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.users__list>ul>li {
+  width: 40%;
+
+}
+
+.users__list>ul>li>button {
+  background-color: var(--green);
+  display: flex;
+  margin: 0 0 0 auto;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}

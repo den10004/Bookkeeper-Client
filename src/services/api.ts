@@ -134,6 +134,28 @@ class ApiService {
       throw error;
     }
   }
+
+  async changeUsers(
+    token: string,
+    id: string,
+    data: Record<string, any>,
+  ): Promise<void> {
+    const isFormData = data instanceof FormData;
+    try {
+      const response = await fetch(`${API_BASE}/protected/users/${id}`, {
+        method: "PUT",
+        headers: isFormData
+          ? { Authorization: `Bearer ${token}` }
+          : this.getHeaders(token),
+        credentials: "include",
+        body: isFormData ? data : JSON.stringify(data),
+      });
+      return this.handleResponse<void>(response);
+    } catch (error) {
+      console.error("Ошибка получения пользователей:", error);
+      throw error;
+    }
+  }
 }
 
 export const api = new ApiService();
