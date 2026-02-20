@@ -2,15 +2,20 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types/auth";
 import { api } from "../services/api";
+import { roles } from "../constants";
 
 export default function Users() {
   const { auth } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [accountants, setAccountants] = useState<User[]>([]);
   const [loadingAccountants, setLoadingAccountants] = useState(false);
+  const [loadingUsersList, setLoadingUsersList] = useState(false);
+  const [usersList, setUsersList] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
+
+  console.log(roles);
 
   const users = async () => {
     if (!auth.accessToken) return;
@@ -25,6 +30,24 @@ export default function Users() {
       setError("Не удалось загрузить список пользователей");
     } finally {
       setLoadingAccountants(false);
+    }
+  };
+
+  const fetchAccountants = async () => {
+    if (!auth.accessToken) return;
+
+    setLoadingAccountants(true);
+    setError(null);
+
+    try {
+      const data = await api.getUsersByRole("accountant", auth.accessToken);
+      setUsersList(data);
+      console.log(loadingUsersList);
+    } catch (err) {
+      console.error("Ошибка загрузки бухгалтеров:", err);
+      setError("Не удалось загрузить список бухгалтеров");
+    } finally {
+      setLoadingUsersList(false);
     }
   };
 
@@ -51,7 +74,12 @@ export default function Users() {
 
   const handleSave = async (userId: string) => {
     if (!auth.accessToken) return;
+    const confirmMessage =
+      "Вы уверены, что хотите сохранить изменения для пользователя";
 
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
     try {
       await api.changeUsers(auth.accessToken, userId, editForm);
       setAccountants(
@@ -71,6 +99,30 @@ export default function Users() {
 
   const handleInputChange = (field: keyof User, value: string) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (!auth.accessToken) return;
+    const confirmMessage = "Вы уверены, что хотите удалить пользователя";
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    try {
+      await api.deleteUser(auth.accessToken, userId);
+      setAccountants(
+        accountants.map((user) =>
+          user.id === Number(userId) ? { ...user, ...editForm } : user,
+        ),
+      );
+
+      setEditingId(null);
+      setEditForm({});
+      setError(null);
+    } catch (err) {
+      console.error("Ошибка сохранения:", err);
+      setError("Не удалось сохранить изменения");
+    }
   };
 
   const renderUserField = (user: User, field: keyof User) => {
@@ -101,8 +153,10 @@ export default function Users() {
           {error && <p className="error">{error}</p>}
           {!loadingAccountants && !error && (
             <div className="users__list">
-              <h3>Список пользователей</h3>
-
+              <div>
+                <h3>Список пользователей</h3>
+                <button>Создать пользователя</button>
+              </div>
               <ul>
                 <li>
                   <strong>Имя</strong>
@@ -139,6 +193,12 @@ export default function Users() {
                         Редактировать
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDelete(String(accountant.id))}
+                      style={{ background: "var(--red)" }}
+                    >
+                      Удалить
+                    </button>
                   </li>
                 </ul>
               ))}

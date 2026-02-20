@@ -3,7 +3,7 @@
   --bg2: rgb(249, 249, 249);
   --border: rgb(221, 221, 221);
   --green: green;
-  --red: red;
+  --red: rgb(235, 27, 55);
   --blue: blue;
 }
 
@@ -151,6 +151,17 @@ table {
 
 .users>button {
   background-color: var(--blue);
+}
+
+.users__list>div {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.users__list>div>button {
+  background-color: var(--green);
 }
 
 .users__list>ul {

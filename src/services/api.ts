@@ -156,6 +156,39 @@ class ApiService {
       throw error;
     }
   }
+
+  async deleteUser(token: string, id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/protected/users/${id}`, {
+        method: "DELETE",
+        headers: this.getHeaders(token),
+        credentials: "include",
+      });
+      return this.handleResponse<void>(response);
+    } catch (error) {
+      console.error("Ошибка при удалении заявки:", error);
+      throw error;
+    }
+  }
+
+  async createUser(
+    token: string,
+    data: Partial<Application> | FormData,
+  ): Promise<Application> {
+    try {
+      const response = await fetch(`${API_BASE}/protected/users`, {
+        method: "POST",
+        headers: this.getHeaders(token),
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      return this.handleResponse<Application>(response);
+    } catch (error) {
+      console.error("Ошибка при создании заявки:", error);
+      throw error;
+    }
+  }
 }
 
 export const api = new ApiService();
