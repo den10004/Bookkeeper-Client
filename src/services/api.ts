@@ -181,9 +181,9 @@ class ApiService {
       });
 
       return this.handleResponse<User>(response);
-    } catch (error) {
-      console.error("Ошибка при создании пользователя:", error);
-      throw error;
+    } catch (err) {
+      console.error("Ошибка при создании пользователя:", err);
+      throw err;
     }
   }
 }
