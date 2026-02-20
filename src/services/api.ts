@@ -120,6 +120,20 @@ class ApiService {
       throw error;
     }
   }
+
+  async fetchUsers(token: string): Promise<User[]> {
+    try {
+      const response = await fetch(`${API_BASE}/protected/users`, {
+        method: "GET",
+        headers: this.getHeaders(token),
+        credentials: "include",
+      });
+      return this.handleResponse<User[]>(response);
+    } catch (error) {
+      console.error("Ошибка получения пользователей:", error);
+      throw error;
+    }
+  }
 }
 
 export const api = new ApiService();

@@ -146,3 +146,9 @@ table {
   display: grid;
   gap: 15px;
 }
+
+/********* Users **********************/
+
+.users>button {
+  background-color: var(--blue);
+}

@@ -74,7 +74,7 @@ export default function Profile() {
   return (
     <div className="wrapper">
       <Account />
-
+      {auth.user?.role === "director" && <Users />}
       {auth.user?.role === "manager" && (
         <AddApplication
           onApplicationAdded={addApplicationOptimistic}
@@ -89,8 +89,6 @@ export default function Profile() {
         onApplicationUpdated={updateApplicationOptimistic}
         onApplicationsUpdate={refreshApplications}
       />
-
-      {auth.user?.role === "director" && <Users />}
     </div>
   );
 }
