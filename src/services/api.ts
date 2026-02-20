@@ -171,10 +171,7 @@ class ApiService {
     }
   }
 
-  async createUser(
-    token: string,
-    data: Partial<Application> | FormData,
-  ): Promise<Application> {
+  async createUser(token: string, data: Partial<User>): Promise<User> {
     try {
       const response = await fetch(`${API_BASE}/protected/users`, {
         method: "POST",
@@ -183,7 +180,7 @@ class ApiService {
         body: JSON.stringify(data),
       });
 
-      return this.handleResponse<Application>(response);
+      return this.handleResponse<User>(response);
     } catch (error) {
       console.error("Ошибка при создании заявки:", error);
       throw error;

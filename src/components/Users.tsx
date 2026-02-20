@@ -9,13 +9,17 @@ export default function Users() {
   const [isOpen, setIsOpen] = useState(false);
   const [accountants, setAccountants] = useState<User[]>([]);
   const [loadingAccountants, setLoadingAccountants] = useState(false);
-  const [loadingUsersList, setLoadingUsersList] = useState(false);
-  const [usersList, setUsersList] = useState<User[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
 
-  console.log(roles);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: "",
+    email: "",
+    role: "manager",
+    password: "",
+  });
 
   const users = async () => {
     if (!auth.accessToken) return;
@@ -30,24 +34,6 @@ export default function Users() {
       setError("Не удалось загрузить список пользователей");
     } finally {
       setLoadingAccountants(false);
-    }
-  };
-
-  const fetchAccountants = async () => {
-    if (!auth.accessToken) return;
-
-    setLoadingAccountants(true);
-    setError(null);
-
-    try {
-      const data = await api.getUsersByRole("accountant", auth.accessToken);
-      setUsersList(data);
-      console.log(loadingUsersList);
-    } catch (err) {
-      console.error("Ошибка загрузки бухгалтеров:", err);
-      setError("Не удалось загрузить список бухгалтеров");
-    } finally {
-      setLoadingUsersList(false);
     }
   };
 
@@ -110,23 +96,87 @@ export default function Users() {
     }
     try {
       await api.deleteUser(auth.accessToken, userId);
-      setAccountants(
-        accountants.map((user) =>
-          user.id === Number(userId) ? { ...user, ...editForm } : user,
-        ),
-      );
-
-      setEditingId(null);
-      setEditForm({});
+      setAccountants(accountants.filter((user) => user.id !== Number(userId)));
       setError(null);
     } catch (err) {
-      console.error("Ошибка сохранения:", err);
-      setError("Не удалось сохранить изменения");
+      console.error("Ошибка удаления:", err);
+      setError("Не удалось удалить пользователя");
+    }
+  };
+
+  const handleCreateClick = () => {
+    setIsCreating(true);
+    setNewUser({
+      username: "",
+      email: "",
+      role: "manager",
+      password: "",
+    });
+  };
+
+  const handleCreateCancel = () => {
+    setIsCreating(false);
+    setNewUser({
+      username: "",
+      email: "",
+      role: "manager",
+      password: "",
+    });
+  };
+
+  const handleNewUserChange = (field: string, value: string) => {
+    setNewUser((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateUser = async () => {
+    if (!auth.accessToken) return;
+
+    if (!newUser.username || !newUser.email) {
+      setError("Заполните все поля");
+      return;
+    }
+
+    try {
+      const createdUser = await api.createUser(auth.accessToken, newUser);
+      const completeUser: User = {
+        id: createdUser.id,
+        username: createdUser.username || newUser.username,
+        email: createdUser.email || newUser.email,
+        role: createdUser.role || newUser.role,
+      };
+
+      setAccountants([...accountants, completeUser]);
+      setIsCreating(false);
+      setNewUser({
+        username: "",
+        email: "",
+        role: "manager",
+        password: "",
+      });
+      setError(null);
+    } catch (err) {
+      console.error("Ошибка создания пользователя:", err);
+      setError("Не удалось создать пользователя");
     }
   };
 
   const renderUserField = (user: User, field: keyof User) => {
     if (editingId === user.id) {
+      if (field === "role") {
+        return (
+          <select
+            value={(editForm[field] as string) || ""}
+            onChange={(e) => handleInputChange(field, e.target.value)}
+            className="edit-input"
+          >
+            {Object.entries(roles).map(([key, value]) => (
+              <option key={key} value={key}>
+                {value}
+              </option>
+            ))}
+          </select>
+        );
+      }
       return (
         <input
           type="text"
@@ -136,6 +186,11 @@ export default function Users() {
         />
       );
     }
+
+    if (field === "role") {
+      return <span>{roles[user.role as keyof typeof roles] || user.role}</span>;
+    }
+
     return <span>{user[field]}</span>;
   };
 
@@ -153,31 +208,144 @@ export default function Users() {
           {error && <p className="error">{error}</p>}
           {!loadingAccountants && !error && (
             <div className="users__list">
-              <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "20px",
+                }}
+              >
                 <h3>Список пользователей</h3>
-                <button>Создать пользователя</button>
+                <button onClick={handleCreateClick}>
+                  Создать пользователя
+                </button>
               </div>
-              <ul>
-                <li>
+
+              {/* Форма создания нового пользователя */}
+              {isCreating && (
+                <div
+                  className="create-user-form"
+                  style={{
+                    background: "#f5f5f5",
+                    padding: "15px",
+                    marginBottom: "20px",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <h4>Новый пользователь</h4>
+                  <ul
+                    style={{
+                      display: "flex",
+                      gap: "10px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <li>
+                      <input
+                        type="text"
+                        placeholder="Имя"
+                        value={newUser.username}
+                        onChange={(e) =>
+                          handleNewUserChange("username", e.target.value)
+                        }
+                      />
+                    </li>
+                    <li>
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        value={newUser.email}
+                        onChange={(e) =>
+                          handleNewUserChange("email", e.target.value)
+                        }
+                      />
+                    </li>
+                    <li>
+                      <input
+                        type="text"
+                        placeholder="password"
+                        value={newUser.password}
+                        onChange={(e) =>
+                          handleNewUserChange("password", e.target.value)
+                        }
+                      />
+                    </li>
+                    <li>
+                      <select
+                        value={newUser.role}
+                        onChange={(e) =>
+                          handleNewUserChange("role", e.target.value)
+                        }
+                      >
+                        {Object.entries(roles).map(([key, value]) => (
+                          <option key={key} value={key}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    </li>
+                    <li className="actions">
+                      <button
+                        onClick={handleCreateUser}
+                        style={{ background: "var(--green, #4CAF50)" }}
+                      >
+                        Сохранить
+                      </button>
+                      <button onClick={handleCreateCancel}>Отмена</button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Заголовки таблицы */}
+              <ul
+                style={{
+                  display: "flex",
+                  listStyle: "none",
+                  padding: "10px 0",
+                  borderBottom: "2px solid #ddd",
+                }}
+              >
+                <li style={{ flex: 1 }}>
                   <strong>Имя</strong>
                 </li>
-                <li>
+                <li style={{ flex: 1 }}>
                   <strong>E-mail</strong>
                 </li>
-                <li>
+                <li style={{ flex: 1 }}>
                   <strong>Должность</strong>
                 </li>
-                <li></li>
+                <li style={{ width: "200px" }}>
+                  <strong>Действия</strong>
+                </li>
               </ul>
+
+              {/* Убедитесь, что у каждого элемента есть уникальный ключ */}
               {accountants.map((accountant) => (
                 <ul
-                  key={accountant.id}
-                  className={editingId === accountant.id ? "editing" : ""}
+                  key={String(accountant.id)} // Явно преобразуем в строку для ключа
+                  style={{
+                    display: "flex",
+                    listStyle: "none",
+                    padding: "10px 0",
+                    background:
+                      editingId === accountant.id ? "#fff3e0" : "transparent",
+                  }}
                 >
-                  <li>{renderUserField(accountant, "username")}</li>
-                  <li>{renderUserField(accountant, "email")}</li>
-                  <li>{accountant.role}</li>
-                  <li className="actions">
+                  <li style={{ flex: 1 }}>
+                    {renderUserField(accountant, "username")}
+                  </li>
+                  <li style={{ flex: 1 }}>
+                    {renderUserField(accountant, "email")}
+                  </li>
+                  <li style={{ flex: 1 }}>
+                    {renderUserField(accountant, "role")}
+                  </li>
+                  <li
+                    className="actions"
+                    style={{ width: "200px", display: "flex", gap: "5px" }}
+                  >
                     {editingId === accountant.id ? (
                       <>
                         <button
@@ -189,16 +357,18 @@ export default function Users() {
                         <button onClick={handleCancel}>Отмена</button>
                       </>
                     ) : (
-                      <button onClick={() => handleEdit(accountant)}>
-                        Редактировать
-                      </button>
+                      <>
+                        <button onClick={() => handleEdit(accountant)}>
+                          Редактировать
+                        </button>
+                        <button
+                          onClick={() => handleDelete(String(accountant.id))}
+                          style={{ background: "var(--red)" }}
+                        >
+                          Удалить
+                        </button>
+                      </>
                     )}
-                    <button
-                      onClick={() => handleDelete(String(accountant.id))}
-                      style={{ background: "var(--red)" }}
-                    >
-                      Удалить
-                    </button>
                   </li>
                 </ul>
               ))}
