@@ -153,7 +153,7 @@ export default function AddApplication({
       {isOpen && (
         <div className="addApplication__open">
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="name">Название заявки *</label>
               <input
                 type="text"
@@ -163,13 +163,10 @@ export default function AddApplication({
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                style={{
-                  width: "100%",
-                }}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="organization">Организация *</label>
               <input
                 type="text"
@@ -182,7 +179,7 @@ export default function AddApplication({
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="cost">Стоимость лида</label>
               <input
                 type="number"
@@ -192,13 +189,10 @@ export default function AddApplication({
                 step="any"
                 value={formData.cost}
                 onChange={handleInputChange}
-                style={{
-                  width: "100%",
-                }}
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="quantity">Количество лидов</label>
               <input
                 type="number"
@@ -211,7 +205,7 @@ export default function AddApplication({
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="comment">Комментарии</label>
               <input
                 type="text"
@@ -222,7 +216,7 @@ export default function AddApplication({
               />
             </div>
 
-            <div style={{ marginBottom: "15px" }}>
+            <div>
               <label htmlFor="assignedAccountantId">Бухгалтер *</label>
               <select
                 id="assignedAccountantId"
@@ -231,10 +225,6 @@ export default function AddApplication({
                 onChange={handleInputChange}
                 required
                 disabled={loadingAccountants}
-                style={{
-                  width: "100%",
-                  backgroundColor: loadingAccountants ? "#e9ecef" : "white",
-                }}
               >
                 <option value="">
                   {loadingAccountants ? "Загрузка..." : "Выберите бухгалтера"}

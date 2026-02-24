@@ -383,7 +383,6 @@ table {
   margin-bottom: 20px
 }
 
-
 .addApplication__open {
   margin-top: 10px;
   padding: 20px;
@@ -391,6 +390,15 @@ table {
   border-radius: 4px;
   border: 1px solid var(--border)
 }
+
+.addApplication__open>form>div {
+  margin-top: 15px
+}
+
+.addApplication__open>form>div>input {
+  width: 100%,
+}
+
 
 .addApplication__open>div>label {
   display: block;

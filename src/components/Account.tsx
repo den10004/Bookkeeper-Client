@@ -1,9 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { roles } from "../constants";
 
 export default function Account() {
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
+  const roleDisplay =
+    (auth.user?.role && roles[auth.user.role as keyof typeof roles]) ??
+    "Не указана";
 
   if (auth.isLoading) return <div>Загрузка...</div>;
 
@@ -17,7 +21,7 @@ export default function Account() {
           <strong>Имя:</strong> {auth.user?.username}
         </li>
         <li>
-          <strong>Роль:</strong> {auth.user?.role}
+          <strong>Роль:</strong> {roleDisplay}
         </li>
       </ul>
 

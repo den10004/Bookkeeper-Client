@@ -2,7 +2,7 @@ export const roles = {
   accountant: "бухгалтер",
   director: "директор",
   manager: "менеджер",
-};
+} as const;
 
 export const errorDictionary: Record<string, string> = {
   "username must be unique": "Пользователь с таким именем уже существует",
