@@ -58,12 +58,6 @@ export default function FileUploader({
     setInputKey(Date.now());
   };
 
-  const handleClearAll = () => {
-    setFiles([]);
-    onFilesChange([]);
-    setInputKey(Date.now());
-  };
-
   const formatFileSize = (bytes: number): string => {
     return (bytes / 1024).toFixed(1);
   };
