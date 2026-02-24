@@ -234,160 +234,115 @@ export default function Users() {
           {error && <p className="error">{error}</p>}
 
           <div className="users__list">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-              }}
-            >
+            <div className="users__header">
               <h3>Список пользователей</h3>
               <button onClick={handleCreateClick}>Создать пользователя</button>
             </div>
 
             {isCreating && (
-              <div
-                className="create-user-form"
-                style={{
-                  background: "#f5f5f5",
-                  padding: "15px",
-                  marginBottom: "20px",
-                  borderRadius: "4px",
-                }}
-              >
-                <h4>Новый пользователь</h4>
-                <form onSubmit={handleCreateUser}>
-                  <ul
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      alignItems: "center",
-                      listStyle: "none",
-                      padding: 0,
-                    }}
+              <div className="create-user-form">
+                <h4>Создать нового пользователя</h4>
+                <form className="user__form" onSubmit={handleCreateUser}>
+                  <input
+                    type="text"
+                    placeholder="Имя"
+                    autoComplete="name"
+                    id="name"
+                    name="name"
+                    required
+                    minLength={2}
+                    maxLength={50}
+                    value={newUser.username}
+                    onChange={(e) =>
+                      handleNewUserChange("username", e.target.value)
+                    }
+                  />
+
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    autoComplete="Email"
+                    id="Email"
+                    name="email"
+                    required
+                    value={newUser.email}
+                    onChange={(e) =>
+                      handleNewUserChange("email", e.target.value)
+                    }
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="password"
+                    autoComplete="password"
+                    id="password"
+                    name="password"
+                    required
+                    minLength={6}
+                    maxLength={50}
+                    pattern="^(?=.*[A-Za-z])(?=.*\d).*"
+                    title="Пароль должен содержать хотя бы одну букву и одну цифру"
+                    value={newUser.password}
+                    onChange={(e) =>
+                      handleNewUserChange("password", e.target.value)
+                    }
+                  />
+
+                  <select
+                    value={newUser.role}
+                    name="role"
+                    id="role"
+                    onChange={(e) =>
+                      handleNewUserChange("role", e.target.value)
+                    }
+                    required
                   >
-                    <li>
-                      <input
-                        type="text"
-                        placeholder="Имя"
-                        required
-                        minLength={2}
-                        maxLength={50}
-                        value={newUser.username}
-                        onChange={(e) =>
-                          handleNewUserChange("username", e.target.value)
-                        }
-                      />
-                    </li>
-                    <li>
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        required
-                        value={newUser.email}
-                        onChange={(e) =>
-                          handleNewUserChange("email", e.target.value)
-                        }
-                      />
-                    </li>
-                    <li>
-                      <input
-                        type="password"
-                        placeholder="Пароль"
-                        required
-                        minLength={6}
-                        maxLength={50}
-                        pattern="^(?=.*[A-Za-z])(?=.*\d).*"
-                        title="Пароль должен содержать хотя бы одну букву и одну цифру"
-                        value={newUser.password}
-                        onChange={(e) =>
-                          handleNewUserChange("password", e.target.value)
-                        }
-                      />
-                    </li>
-                    <li>
-                      <select
-                        value={newUser.role}
-                        onChange={(e) =>
-                          handleNewUserChange("role", e.target.value)
-                        }
-                        required
-                      >
-                        {Object.entries(roles).map(([key, value]) => (
-                          <option key={key} value={key}>
-                            {value}
-                          </option>
-                        ))}
-                      </select>
-                    </li>
-                    <li className="actions">
-                      <button
-                        type="submit"
-                        style={{ background: "var(--green)" }}
-                      >
-                        Сохранить
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCreateCancel}
-                        style={{ background: "var(--blue)" }}
-                      >
-                        Отмена
-                      </button>
-                    </li>
-                  </ul>
+                    {Object.entries(roles).map(([key, value]) => (
+                      <option key={key} value={key}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="actions">
+                    <button
+                      type="submit"
+                      style={{ background: "var(--green)" }}
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCreateCancel}
+                      style={{ background: "var(--blue)" }}
+                    >
+                      Отмена
+                    </button>
+                  </div>
                 </form>
               </div>
             )}
 
-            {/* Заголовки таблицы */}
-            <ul
-              style={{
-                display: "flex",
-                listStyle: "none",
-                padding: "10px 0",
-                borderBottom: "2px solid #ddd",
-              }}
-            >
-              <li style={{ flex: 1 }}>
+            <ul className="user__form-header">
+              <li>
                 <strong>Имя</strong>
               </li>
-              <li style={{ flex: 1 }}>
+              <li>
                 <strong>E-mail</strong>
               </li>
-              <li style={{ flex: 1 }}>
+              <li>
                 <strong>Должность</strong>
               </li>
-              <li style={{ width: "200px" }}>
+              <li>
                 <strong>Действия</strong>
               </li>
             </ul>
-
-            {/* Список пользователей */}
             {accountants.map((accountant) => (
               <div key={accountant.id}>
                 {editingId === accountant.id ? (
-                  // Режим редактирования - форма
-                  <form
-                    onSubmit={(e) => handleSave(String(accountant.id), e)}
-                    style={{
-                      display: "flex",
-                      listStyle: "none",
-                      padding: "10px 0",
-                      background: "#fff3e0",
-                    }}
-                  >
-                    <ul
-                      style={{
-                        display: "flex",
-                        width: "100%",
-                        listStyle: "none",
-                        padding: 0,
-                        margin: 0,
-                      }}
-                    >
-                      <li style={{ flex: 1 }}>
+                  <form onSubmit={(e) => handleSave(String(accountant.id), e)}>
+                    <ul className="user__form-data">
+                      <li>
                         <input
                           type="text"
                           value={editForm.username || ""}
@@ -399,18 +354,17 @@ export default function Users() {
                           minLength={2}
                         />
                       </li>
-                      <li style={{ flex: 1 }}>
+                      <li>
                         <input
                           type="email"
                           value={editForm.email || ""}
                           onChange={(e) =>
                             handleInputChange("email", e.target.value)
                           }
-                          className="edit-input"
                           required
                         />
                       </li>
-                      <li style={{ flex: 1 }}>
+                      <li>
                         <select
                           value={editForm.role || ""}
                           onChange={(e) =>
@@ -428,7 +382,7 @@ export default function Users() {
                       </li>
                       <li
                         className="actions"
-                        style={{ width: "200px", display: "flex", gap: "5px" }}
+                        style={{ display: "flex", gap: "5px" }}
                       >
                         <button
                           type="submit"
@@ -447,28 +401,15 @@ export default function Users() {
                     </ul>
                   </form>
                 ) : (
-                  <ul
-                    style={{
-                      display: "flex",
-                      listStyle: "none",
-                      padding: "10px 0",
-                      background: "transparent",
-                    }}
-                  >
-                    <li style={{ flex: 1 }}>
-                      {renderUserField(accountant, "username")}
-                    </li>
-                    <li style={{ flex: 1 }}>
-                      {renderUserField(accountant, "email")}
-                    </li>
-                    <li style={{ flex: 1 }}>
-                      {renderUserField(accountant, "role")}
-                    </li>
-                    <li
-                      className="actions"
-                      style={{ width: "200px", display: "flex", gap: "5px" }}
-                    >
-                      <button onClick={() => handleEdit(accountant)}>
+                  <ul className="user__form-data">
+                    <li>{renderUserField(accountant, "username")}</li>
+                    <li>{renderUserField(accountant, "email")}</li>
+                    <li>{renderUserField(accountant, "role")}</li>
+                    <li className="actions">
+                      <button
+                        onClick={() => handleEdit(accountant)}
+                        style={{ background: "var(--green)" }}
+                      >
                         Редактировать
                       </button>
                       <button
