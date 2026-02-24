@@ -142,50 +142,19 @@ export default function AddApplication({
   };
 
   return (
-    <div style={{ marginBottom: "20px" }}>
+    <div className="addApplication">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontSize: "1rem",
-          width: "100%",
-          textAlign: "left",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
+        style={{ background: "var(--blue)" }}
       >
         <span>Добавить заявку</span>
-        <span>{isOpen ? "▼" : "▶"}</span>
       </button>
 
       {isOpen && (
-        <div
-          style={{
-            marginTop: "10px",
-            padding: "20px",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "4px",
-            border: "1px solid #dee2e6",
-          }}
-        >
+        <div className="addApplication__open">
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="name"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Название заявки *
-              </label>
+              <label htmlFor="name">Название заявки *</label>
               <input
                 type="text"
                 id="name"
@@ -196,24 +165,12 @@ export default function AddApplication({
                 required
                 style={{
                   width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
                 }}
               />
             </div>
 
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="organization"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Организация *
-              </label>
+              <label htmlFor="organization">Организация *</label>
               <input
                 type="text"
                 id="organization"
@@ -222,26 +179,11 @@ export default function AddApplication({
                 value={formData.organization}
                 onChange={handleInputChange}
                 required
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
-                }}
               />
             </div>
 
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="cost"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Стоимость лида
-              </label>
+              <label htmlFor="cost">Стоимость лида</label>
               <input
                 type="number"
                 id="cost"
@@ -252,24 +194,12 @@ export default function AddApplication({
                 onChange={handleInputChange}
                 style={{
                   width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
                 }}
               />
             </div>
 
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="quantity"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Количество лидов
-              </label>
+              <label htmlFor="quantity">Количество лидов</label>
               <input
                 type="number"
                 id="quantity"
@@ -278,52 +208,22 @@ export default function AddApplication({
                 step="any"
                 value={formData.quantity}
                 onChange={handleInputChange}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
-                }}
               />
             </div>
 
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="comment"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Комментарии
-              </label>
+              <label htmlFor="comment">Комментарии</label>
               <input
                 type="text"
                 id="comment"
                 name="comment"
                 value={formData.comment}
                 onChange={handleInputChange}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
-                }}
               />
             </div>
 
             <div style={{ marginBottom: "15px" }}>
-              <label
-                htmlFor="assignedAccountantId"
-                style={{
-                  display: "block",
-                  marginBottom: "5px",
-                  fontWeight: "bold",
-                }}
-              >
-                Бухгалтер *
-              </label>
+              <label htmlFor="assignedAccountantId">Бухгалтер *</label>
               <select
                 id="assignedAccountantId"
                 name="assignedAccountantId"
@@ -333,9 +233,6 @@ export default function AddApplication({
                 disabled={loadingAccountants}
                 style={{
                   width: "100%",
-                  padding: "8px",
-                  border: "1px solid #ced4da",
-                  borderRadius: "4px",
                   backgroundColor: loadingAccountants ? "#e9ecef" : "white",
                 }}
               >
@@ -356,50 +253,13 @@ export default function AddApplication({
               label="Прикрепить файлы (можно несколько)"
             />
 
-            {error && (
-              <div
-                style={{
-                  marginBottom: "15px",
-                  padding: "10px",
-                  backgroundColor: "#f8d7da",
-                  color: "#721c24",
-                  border: "1px solid #f5c6cb",
-                  borderRadius: "4px",
-                }}
-              >
-                {error}
-              </div>
-            )}
+            {error && <div className="addApplication__error">{error}</div>}
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                type="submit"
-                disabled={loading || loadingAccountants}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#28a745",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor:
-                    loading || loadingAccountants ? "not-allowed" : "pointer",
-                  opacity: loading || loadingAccountants ? 0.7 : 1,
-                }}
-              >
+            <div className="addApplication__buttons">
+              <button type="submit" disabled={loading || loadingAccountants}>
                 {loading ? "Создание..." : "Создать заявку"}
               </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
-              >
+              <button type="button" onClick={handleCancel}>
                 Отмена
               </button>
             </div>
