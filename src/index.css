@@ -311,6 +311,7 @@ table {
   grid-row-gap: 10px;
   padding: 10px;
   border-radius: 4px;
+  background-color: var(--bg2);
 }
 
 .div1 {
@@ -426,4 +427,67 @@ table {
 
 .addApplication__buttons>button:last-child {
   background-color: var(--gray);
+}
+
+/*******загрузка файла************/
+
+.upload {
+  margin-bottom: 20px;
+}
+
+.upload>label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: "bold";
+}
+
+.upload__showFileList {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #e9f7ff;
+  border: 1px solid #b3e0ff;
+  border-radius: 6px,
+}
+
+.upload__showFileList>ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  list-style: "disc";
+  overflow-y: "auto";
+  max-height: 140px,
+}
+
+.upload__showFileList>ul>li {
+  margin-bottom: 6px;
+  word-break: break-all;
+  display: flex;
+  justify-content: space-between;
+  align-items: center
+}
+
+.upload__showFileList>button {
+  margin-top: 10px;
+  background-color: #ff4d4f,
+}
+
+.upload__showFileList>ul>li>span {
+  color: var(--gray)
+}
+
+.upload__showFileList>ul>li>button {
+  background-color: var(--red);
+  flex-shrink: 0;
+  padding: 5px;
+  font-size: 12px;
+}
+
+
+.upload>input {
+  display: block;
+  width: 100%
+}
+
+.upload__error {
+  margin-top: 8px;
+  color: var(--gray);
 }

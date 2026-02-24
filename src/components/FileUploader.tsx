@@ -4,7 +4,6 @@ interface FileUploaderProps {
   onFilesChange: (files: File[]) => void;
   initialFiles?: File[];
   disabled?: boolean;
-  maxHeight?: string;
   label?: string;
   showFileList?: boolean;
   accept?: string;
@@ -15,7 +14,6 @@ export default function FileUploader({
   onFilesChange,
   initialFiles = [],
   disabled = false,
-  maxHeight = "140px",
   label = "Прикрепить файлы (можно несколько)",
   showFileList = true,
   accept = "*/*",
@@ -71,18 +69,8 @@ export default function FileUploader({
   };
 
   return (
-    <div style={{ marginBottom: "20px" }}>
-      <label
-        htmlFor="file-upload"
-        style={{
-          display: "block",
-          marginBottom: "8px",
-          fontWeight: "bold",
-          fontSize: "1rem",
-        }}
-      >
-        {label}
-      </label>
+    <div className="upload">
+      <label htmlFor="file-upload">{label}</label>
 
       <input
         key={inputKey}
@@ -93,105 +81,36 @@ export default function FileUploader({
         disabled={disabled}
         accept={accept}
         style={{
-          display: "block",
-          width: "100%",
-          padding: "10px",
-          border: files.length > 0 ? "2px solid #28a745" : "2px dashed #007bff",
-          borderRadius: "8px",
-          backgroundColor: files.length > 0 ? "#e6ffed" : "#f0f8ff",
-          cursor: disabled ? "not-allowed" : "pointer",
-          fontSize: "1rem",
-          opacity: disabled ? 0.6 : 1,
+          border:
+            files.length > 0
+              ? "2px solid var(--grren)"
+              : "2px dashed var(--blue)",
         }}
       />
 
       {showFileList && files.length > 0 && (
-        <div
-          style={{
-            marginTop: "12px",
-            padding: "12px",
-            backgroundColor: "#e9f7ff",
-            border: "1px solid #b3e0ff",
-            borderRadius: "6px",
-            fontSize: "0.95rem",
-          }}
-        >
+        <div className="upload__showFileList">
           <strong>Выбрано файлов: {files.length}</strong>
-          <ul
-            style={{
-              margin: "8px 0 0 0",
-              paddingLeft: "20px",
-              listStyle: "disc",
-              maxHeight: maxHeight,
-              overflowY: "auto",
-            }}
-          >
+          <ul>
             {files.map((file, index) => (
               <li
                 key={`${file.name}-${index}-${file.lastModified}-${file.size}`}
-                style={{
-                  marginBottom: "6px",
-                  wordBreak: "break-all",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
               >
                 <span>
                   {file.name}
-                  <span style={{ color: "#555", fontSize: "0.85rem" }}>
-                    {" "}
-                    ({formatFileSize(file.size)} KB)
-                  </span>
+                  <span> ({formatFileSize(file.size)} KB)</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(index)}
-                  style={{
-                    marginLeft: "8px",
-                    padding: "2px 8px",
-                    backgroundColor: "#ff4d4f",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    flexShrink: 0,
-                  }}
-                >
+                <button type="button" onClick={() => handleRemoveFile(index)}>
                   ✕
                 </button>
               </li>
             ))}
           </ul>
-
-          <button
-            type="button"
-            onClick={handleClearAll}
-            style={{
-              marginTop: "10px",
-              padding: "6px 12px",
-              backgroundColor: "#ff4d4f",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-            }}
-          >
-            Очистить все файлы
-          </button>
         </div>
       )}
 
       {showFileList && files.length === 0 && !disabled && (
-        <div
-          style={{
-            marginTop: "8px",
-            color: "#777",
-            fontSize: "0.9rem",
-          }}
-        >
+        <div className="upload__error">
           {multiple ? "Файлы не выбраны" : "Файл не выбран"}
         </div>
       )}

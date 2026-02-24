@@ -336,9 +336,7 @@ export default function ApplicationCard({
                     </p>
                     <p
                       className="download-link"
-                      style={{
-                        color: "var(--gray)",
-                      }}
+                      style={{ color: "var(--gray)" }}
                     >
                       Размер: {(file.size / 1024).toFixed(2)} KB
                     </p>
@@ -356,7 +354,6 @@ export default function ApplicationCard({
               initialFiles={editFiles}
               disabled={isUpdating}
               label="Прикрепить файлы (можно несколько)"
-              maxHeight="140px"
             />
           )}
         </div>

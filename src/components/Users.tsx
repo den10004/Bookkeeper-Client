@@ -425,9 +425,7 @@ export default function Users() {
             ))}
 
             {accountants.length === 0 && !loadingAccountants && (
-              <p style={{ textAlign: "center", padding: "20px" }}>
-                Нет пользователей для отображения
-              </p>
+              <p>Нет пользователей для отображения</p>
             )}
           </div>
         </div>
