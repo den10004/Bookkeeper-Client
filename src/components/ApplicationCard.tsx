@@ -184,29 +184,12 @@ export default function ApplicationCard({
     if (isEditing) {
       if (type === "textarea") {
         return (
-          <div style={{ marginBottom: "10px" }}>
-            <label
-              style={{
-                fontSize: "0.85rem",
-                color: "#777",
-                display: "block",
-                marginBottom: "4px",
-              }}
-            >
-              {label}:
-            </label>
+          <div className="applications">
+            <label>{label}:</label>
             <textarea
               value={(value as string) || ""}
               onChange={(e) => handleInputChange(e, field)}
               onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                fontSize: "0.9rem",
-                fontFamily: "inherit",
-              }}
               rows={3}
               placeholder={`Введите ${label.toLowerCase()}`}
             />
@@ -215,29 +198,13 @@ export default function ApplicationCard({
       }
 
       return (
-        <div style={{ marginBottom: "10px" }}>
-          <label
-            style={{
-              fontSize: "0.85rem",
-              color: "#777",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            {label}:
-          </label>
+        <div className="applications">
+          <label>{label}:</label>
           <input
             type={type}
             value={(value as string | number) ?? ""}
             onChange={(e) => handleInputChange(e, field)}
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              padding: "8px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              fontSize: "0.9rem",
-            }}
             placeholder={`Введите ${label.toLowerCase()}`}
           />
         </div>
@@ -245,210 +212,76 @@ export default function ApplicationCard({
     }
 
     return (
-      <div style={{ marginBottom: "10px" }}>
-        <span
-          style={{
-            fontSize: "0.85rem",
-            color: "#777",
-            display: "block",
-            marginBottom: "4px",
-          }}
-        >
-          {label}:
-        </span>
-        <span style={{ color: "#555", lineHeight: "1.5" }}>{displayValue}</span>
+      <div className="applications">
+        <span>{label}</span>
+        <span>{displayValue}</span>
       </div>
     );
   };
 
   return (
     <div
+      className="applications__card"
       style={{
-        padding: "20px",
-        border: isEditing ? "2px solid #28a745" : "1px solid #ddd",
-        borderRadius: "8px",
-        backgroundColor: "#f9f9f9",
-        transition: "box-shadow 0.3s, border-color 0.3s",
-        cursor: "pointer",
-        opacity: isDeleting ? 0.6 : 1,
-        pointerEvents: isDeleting ? "none" : "auto",
+        border: isEditing ? "2px solid var(--green)" : "1px solid var(--gray)",
       }}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)")
-      }
-      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "start",
-          marginBottom: "10px",
-        }}
-      >
+      <div className="div1">
         {renderEditableField("name", "Название", "text")}
       </div>
-
-      <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
-        Создано: {application.Creator?.username || "Не указано"}
-      </p>
-
-      <p style={{ margin: "10px 0", color: "#555", lineHeight: "1.5" }}>
-        Назначено: {application.AssignedAccountant?.username || "Не назначено"}
-      </p>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          fontSize: "0.85rem",
-          color: "#777",
-          marginTop: "10px",
-        }}
-      >
-        <span>
-          📅 Создано:{" "}
-          {application.createdAt
-            ? new Date(application.createdAt).toLocaleDateString()
-            : "Дата не указана"}
-        </span>
+      <div className="div2">
+        <div className="applications">
+          <span>Создано:</span>
+          <span>{application.Creator?.username || "Не указано"}</span>
+        </div>
       </div>
-
-      {renderEditableField("organization", "Организация")}
-      {renderEditableField("quantity", "Количество лидов", "number")}
-      {renderEditableField("cost", "Стоимость лида", "text")}
-      {renderEditableField("comment", "Комментарии", "textarea")}
-
-      <div style={{ marginTop: "15px" }}>
-        <p style={{ marginBottom: "5px", fontWeight: "500" }}>
-          {isEditing ? "Текущие файлы:" : "Файлы:"}
-        </p>
-
-        {application.files && application.files.length > 0 ? (
-          application.files.map((file, index) => {
-            const downloadLink = application.downloadLinks?.[index];
-
-            return (
-              <div
-                key={index}
-                onClick={(e) => downloadFile(file, downloadLink, e)}
-                style={{
-                  padding: "8px",
-                  marginBottom: "5px",
-                  backgroundColor: "#f5f5f5",
-                  borderRadius: "4px",
-                  border: "1px solid #ddd",
-                  cursor: downloadLink ? "pointer" : "default",
-                  transition: "background-color 0.2s",
-                  opacity: isEditing ? 0.7 : 1,
-                }}
-                onMouseEnter={(e) =>
-                  downloadLink &&
-                  (e.currentTarget.style.backgroundColor = "#e9e9e9")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#f5f5f5")
-                }
-              >
-                <p style={{ margin: 0, fontWeight: "500" }}>
-                  {file.original}
-                  {downloadLink && " ⬇️"}
-                </p>
-                <p
-                  style={{
-                    margin: "3px 0 0 0",
-                    fontSize: "12px",
-                    color: "#666",
-                  }}
-                >
-                  Размер: {(file.size / 1024).toFixed(2)} KB
-                </p>
-                {!downloadLink && (
-                  <p
-                    style={{
-                      margin: "3px 0 0 0",
-                      fontSize: "12px",
-                      color: "#ff6b6b",
-                    }}
-                  >
-                    Ссылка для скачивания недоступна
-                  </p>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <p
-            style={{
-              color: "#777",
-              fontStyle: "italic",
-              padding: "8px",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "4px",
-            }}
-          >
-            Файлов нет
-          </p>
-        )}
-
-        {isEditing && (
-          <div
-            style={{
-              marginTop: "20px",
-            }}
-          >
-            <FileUploader
-              onFilesChange={setEditFiles}
-              initialFiles={editFiles}
-              disabled={isUpdating}
-              label="Прикрепить файлы (можно несколько)"
-              maxHeight="140px"
-            />
-          </div>
-        )}
+      <div className="div3">
+        <div className="applications">
+          <span>Назначено:</span>
+          <span>
+            {application.AssignedAccountant?.username || "Не назначено"}
+          </span>
+        </div>
       </div>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          marginTop: "15px",
-          borderTop: "1px solid #eee",
-          paddingTop: "15px",
-        }}
-      >
+      <div className="div4">
+        <div className="applications">
+          <span> Создано:</span>
+          <span>
+            {application.createdAt
+              ? new Date(application.createdAt).toLocaleDateString()
+              : "Дата не указана"}
+          </span>
+        </div>
+      </div>
+      <div className="div5">
+        {renderEditableField("organization", "Организация")}
+      </div>
+      <div className="div6">
+        {renderEditableField("quantity", "Количество", "number")}
+      </div>
+      <div className="div7">
+        {renderEditableField("cost", "Стоимость", "text")}
+      </div>
+      <div className="div8">
+        {renderEditableField("comment", "Комментарии", "textarea")}
+      </div>
+      <div className="application__edit">
         {isEditing ? (
           <>
             <button
               onClick={saveChanges}
               disabled={isUpdating}
               style={{
-                padding: "8px 16px",
-                backgroundColor: isUpdating ? "#6c757d" : "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: isUpdating ? "not-allowed" : "pointer",
-                fontSize: "0.95rem",
-                fontWeight: "500",
-                opacity: isUpdating ? 0.7 : 1,
+                backgroundColor: isUpdating ? "var(--gray)" : "var(--green)",
               }}
             >
-              {isUpdating ? "⏳ Сохранение..." : "💾 Сохранить изменения"}
+              {isUpdating ? "Сохранение..." : "Сохранить"}
             </button>
             <button
               onClick={cancelEditing}
               disabled={isUpdating}
               style={{
-                padding: "8px 16px",
-                backgroundColor: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: isUpdating ? "not-allowed" : "pointer",
-                fontSize: "0.95rem",
-                fontWeight: "500",
-                opacity: isUpdating ? 0.7 : 1,
+                backgroundColor: "var(--gray)",
               }}
             >
               Отмена
@@ -458,39 +291,75 @@ export default function ApplicationCard({
           <button
             onClick={startEditing}
             style={{
-              padding: "8px 16px",
-              backgroundColor: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "0.95rem",
-              fontWeight: "500",
+              backgroundColor: "var(--green)",
             }}
           >
             Редактировать
           </button>
         )}
-        {auth.user && auth.user.role === "director" && (
+        {auth.user && auth.user.role === "director" && !isEditing && (
           <button
             onClick={deleteCard}
-            disabled={isDeleting || isEditing}
+            disabled={isDeleting}
             style={{
-              padding: "8px 16px",
-              backgroundColor: isDeleting ? "#6c757d" : "#eb1b37",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: isDeleting || isEditing ? "not-allowed" : "pointer",
-              fontSize: "0.95rem",
-              fontWeight: "500",
-              opacity: isDeleting || isEditing ? 0.7 : 1,
-              marginLeft: "auto",
+              backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
             }}
           >
-            {isDeleting ? "⏳ Удаление..." : "🗑️ Удалить"}
+            {isDeleting ? "Удаление..." : "Удалить"}
           </button>
         )}
+      </div>{" "}
+      <div className="div10">
+        <div className="applications">
+          <span>{isEditing ? "Текущие файлы:" : "Файлы:"}</span>
+          <div className="download-card">
+            {application.files && application.files.length > 0 ? (
+              application.files.map((file, index) => {
+                const downloadLink = application.downloadLinks?.[index];
+
+                return (
+                  <div
+                    key={index}
+                    onClick={(e) => downloadFile(file, downloadLink, e)}
+                    className="downloadLink-block"
+                    onMouseEnter={(e) =>
+                      downloadLink &&
+                      (e.currentTarget.style.backgroundColor = "var(--bg2)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "var(--bg2)")
+                    }
+                  >
+                    <p>
+                      {file.original}
+                      {downloadLink && " ⬇️"}
+                    </p>
+                    <p
+                      className="download-link"
+                      style={{
+                        color: "var(--gray)",
+                      }}
+                    >
+                      Размер: {(file.size / 1024).toFixed(2)} KB
+                    </p>
+                    {!downloadLink && <p>Ссылка для скачивания недоступна</p>}
+                  </div>
+                );
+              })
+            ) : (
+              <span>Файлов нет</span>
+            )}
+          </div>
+          {isEditing && (
+            <FileUploader
+              onFilesChange={setEditFiles}
+              initialFiles={editFiles}
+              disabled={isUpdating}
+              label="Прикрепить файлы (можно несколько)"
+              maxHeight="140px"
+            />
+          )}
+        </div>
       </div>
     </div>
   );

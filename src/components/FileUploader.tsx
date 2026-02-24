@@ -192,9 +192,7 @@ export default function FileUploader({
             fontSize: "0.9rem",
           }}
         >
-          {multiple
-            ? "Файлы не выбраны (можно выбрать сразу несколько — Ctrl / Shift)"
-            : "Файл не выбран"}
+          {multiple ? "Файлы не выбраны" : "Файл не выбран"}
         </div>
       )}
     </div>
