@@ -16,11 +16,6 @@ export function useIntersectionObserver({
   const [isVisible, setIsVisible] = useState(false);
   const elementRef = useRef<HTMLElement | null>(null);
 
-  const [debugInfo, setDebugInfo] = useState({
-    visibleCount: 0,
-    lastVisible: null,
-  });
-
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
