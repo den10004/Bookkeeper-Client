@@ -1,19 +1,21 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  // eslint-disable-next-line no-undef
+  const env = loadEnv(mode, process.cwd(), "");
 
-  server: {
-    proxy: {
-      // Все запросы на /auth → проксируем на бэкенд (порт 3000)
-      "/api": {
-        target: "http://localhost:3000",
-        changeOrigin: true,
-        secure: false, // если используешь https в dev — редко нужно
+  return {
+    plugins: [react()],
+
+    server: {
+      proxy: {
+        "/api": {
+          target: env.VITE_API_BASE_URL || "http://localhost:3000",
+          changeOrigin: true,
+          secure: false,
+        },
       },
-
-      //   "/api": { target: "http://localhost:3000", changeOrigin: true },
     },
-  },
+  };
 });
