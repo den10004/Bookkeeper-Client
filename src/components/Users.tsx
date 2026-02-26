@@ -365,6 +365,17 @@ export default function Users() {
                         />
                       </li>
                       <li>
+                        <input
+                          type="password"
+                          value={editForm.password || ""}
+                          placeholder="Введите тек"
+                          onChange={(e) =>
+                            handleInputChange("password", e.target.value)
+                          }
+                          required
+                        />
+                      </li>
+                      <li>
                         <select
                           value={editForm.role || ""}
                           onChange={(e) =>
