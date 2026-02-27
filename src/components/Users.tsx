@@ -14,6 +14,7 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  console.log(auth.user?.id);
 
   const fetchUsers = async () => {
     if (!auth.accessToken) return;
@@ -192,19 +193,24 @@ export default function Users() {
                     <li>{renderUserField(accountant, "username")}</li>
                     <li>{renderUserField(accountant, "email")}</li>
                     <li>{renderUserField(accountant, "role")}</li>
+
                     <li className="actions">
-                      <button
-                        onClick={() => handleEdit(accountant)}
-                        style={{ background: "var(--green)" }}
-                      >
-                        Редактировать
-                      </button>
-                      <button
-                        onClick={() => handleDelete(String(accountant.id))}
-                        style={{ background: "var(--red)" }}
-                      >
-                        Удалить
-                      </button>
+                      {auth.user?.id != accountant.id && (
+                        <>
+                          <button
+                            onClick={() => handleEdit(accountant)}
+                            style={{ background: "var(--green)" }}
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            onClick={() => handleDelete(String(accountant.id))}
+                            style={{ background: "var(--red)" }}
+                          >
+                            Удалить
+                          </button>{" "}
+                        </>
+                      )}
                     </li>
                   </ul>
                 )}

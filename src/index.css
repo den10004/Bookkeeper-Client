@@ -259,7 +259,8 @@ table {
 .create-user__form>.actions {
   display: flex;
   gap: 5px;
-  width: auto !important
+  /* width: auto !important;*/
+  width: 350px;
 }
 
 /*****Заявки*********/
@@ -511,4 +512,45 @@ table {
 .upload__error {
   margin-top: 8px;
   color: var(--gray);
+}
+
+
+@media (max-width: 667px) {
+  .applications__card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .create-user__form>.actions {
+    flex-direction: column;
+    width: 150px;
+  }
+
+  .account__block>ul {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto;
+    row-gap: 10px;
+    column-gap: 50px;
+  }
+
+  .users__list>ul {
+    display: none;
+  }
+
+  .users__header>h3 {
+    font-size: 16px;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .users__header {
+    flex-direction: column;
+  }
+
+  .create-user__form {
+    justify-content: start;
+    flex-direction: column;
+  }
 }
