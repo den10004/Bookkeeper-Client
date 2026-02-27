@@ -59,3 +59,13 @@ export interface Application {
   files?: FileData[];
   downloadLinks?: DownloadLink[];
 }
+
+export interface CreateUserProps {
+  onSubmit: (userData: {
+    username: string;
+    email: string;
+    role: string;
+    password: string;
+  }) => Promise<void>;
+  onCancel: () => void;
+}

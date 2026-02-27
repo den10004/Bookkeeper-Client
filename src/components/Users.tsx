@@ -4,6 +4,7 @@ import type { User } from "../types/auth";
 import { api } from "../services/api";
 import { errorDictionary, roles } from "../constants";
 import CreateUserForm from "./CreateUser";
+import EditUserForm from "./EditUserForm";
 
 export default function Users() {
   const { auth } = useAuth();
@@ -12,7 +13,6 @@ export default function Users() {
   const [loadingAccountants, setLoadingAccountants] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Partial<User>>({});
   const [isCreating, setIsCreating] = useState(false);
 
   const fetchUsers = async () => {
@@ -40,41 +40,26 @@ export default function Users() {
 
   const handleEdit = (user: User) => {
     setEditingId(user.id);
-    setEditForm({
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({});
   };
 
-  const handleSave = async (userId: string, e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
+  const handleSave = async (userId: string, formData: Partial<User>) => {
     if (!auth.accessToken) return;
-    const confirmMessage =
-      "Вы уверены, что хотите сохранить изменения для пользователя";
-
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
 
     const originalUser = accountants.find((u) => u.id === Number(userId));
 
     try {
-      await api.changeUsers(auth.accessToken, userId, editForm);
+      await api.changeUsers(auth.accessToken, userId, formData);
       setAccountants(
         accountants.map((user) =>
-          user.id === Number(userId) ? { ...user, ...editForm } : user,
+          user.id === Number(userId) ? { ...user, ...formData } : user,
         ),
       );
 
       setEditingId(null);
-      setEditForm({});
       setError(null);
     } catch (err: any) {
       const errorText = err?.message;
@@ -82,18 +67,10 @@ export default function Users() {
       alert(userMessage);
       setError(userMessage);
 
-      if (originalUser) {
-        setEditForm({
-          username: originalUser.username,
-          email: originalUser.email,
-          role: originalUser.role,
-        });
-      }
+      // Восстанавливаем оригинальные данные в случае ошибки не нужно,
+      // так как форма закрывается только при успешном сохранении
+      throw err; // Пробрасываем ошибку для компонента формы
     }
-  };
-
-  const handleInputChange = (field: keyof User, value: string) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleDelete = async (userId: string) => {
@@ -154,44 +131,14 @@ export default function Users() {
       const userMessage = errorDictionary[errorText] || errorText;
       alert(userMessage);
       setError("Не удалось создать пользователя");
-      throw err; // Пробрасываем ошибку для компонента формы
+      throw err;
     }
   };
 
   const renderUserField = (user: User, field: keyof User) => {
-    if (editingId === user.id) {
-      if (field === "role") {
-        return (
-          <select
-            value={(editForm[field] as string) || ""}
-            onChange={(e) => handleInputChange(field, e.target.value)}
-            className="edit-input"
-            required
-          >
-            {Object.entries(roles).map(([key, value]) => (
-              <option key={key} value={key}>
-                {value}
-              </option>
-            ))}
-          </select>
-        );
-      }
-      return (
-        <input
-          type={field === "email" ? "email" : "text"}
-          value={(editForm[field] as string) || ""}
-          onChange={(e) => handleInputChange(field, e.target.value)}
-          className="edit-input"
-          required
-          minLength={field === "username" ? 2 : undefined}
-        />
-      );
-    }
-
     if (field === "role") {
       return <span>{roles[user.role as keyof typeof roles] || user.role}</span>;
     }
-
     return <span>{user[field]}</span>;
   };
 
@@ -205,7 +152,7 @@ export default function Users() {
 
       {isOpen && (
         <div className="users__block">
-          {loadingAccountants && <p>Загрузка</p>}
+          {loadingAccountants && <p>Загрузка...</p>}
 
           {error && <p className="error">{error}</p>}
 
@@ -240,81 +187,13 @@ export default function Users() {
             {accountants.map((accountant) => (
               <div key={accountant.id}>
                 {editingId === accountant.id ? (
-                  <form onSubmit={(e) => handleSave(String(accountant.id), e)}>
-                    <ul className="user__form-data">
-                      <li>
-                        <input
-                          type="text"
-                          pattern="[A-Za-zА-Яа-яЁё\s]+"
-                          title="Используйте только буквы и пробелы"
-                          value={editForm.username || ""}
-                          onChange={(e) =>
-                            handleInputChange("username", e.target.value)
-                          }
-                          className="edit-input"
-                          required
-                          minLength={2}
-                        />
-                      </li>
-                      <li>
-                        <input
-                          type="email"
-                          value={editForm.email || ""}
-                          onChange={(e) =>
-                            handleInputChange("email", e.target.value)
-                          }
-                          required
-                        />
-                      </li>
-                      <li>
-                        <input
-                          type="password"
-                          value={editForm.password || ""}
-                          placeholder="Пароль текущий или новый"
-                          onChange={(e) =>
-                            handleInputChange("password", e.target.value)
-                          }
-                          required
-                        />
-                      </li>
-                      <li>
-                        <select
-                          value={editForm.role || ""}
-                          onChange={(e) =>
-                            handleInputChange("role", e.target.value)
-                          }
-                          className="edit-input"
-                          required
-                        >
-                          {Object.entries(roles).map(([key, value]) => (
-                            <option key={key} value={key}>
-                              {value}
-                            </option>
-                          ))}
-                        </select>
-                      </li>
-                      <li
-                        className="actions"
-                        style={{ display: "flex", gap: "5px" }}
-                      >
-                        <button
-                          type="submit"
-                          style={{ background: "var(--green)" }}
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancel}
-                          style={{ background: "var(--blue)" }}
-                        >
-                          Отмена
-                        </button>
-                      </li>
-                    </ul>
-                  </form>
+                  <EditUserForm
+                    user={accountant}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                  />
                 ) : (
-                  <ul className="user__form-data">
+                  <ul className="create-user__form">
                     <li>{renderUserField(accountant, "username")}</li>
                     <li>{renderUserField(accountant, "email")}</li>
                     <li>{renderUserField(accountant, "role")}</li>
@@ -337,7 +216,7 @@ export default function Users() {
               </div>
             ))}
 
-            {accountants.length === 0 && !loadingAccountants && (
+            {accountants.length === 0 && !loadingAccountants && !isCreating && (
               <p>Нет пользователей для отображения</p>
             )}
           </div>

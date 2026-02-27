@@ -227,6 +227,24 @@ table {
 
 
 .user__form-data {
+  max-width: 500px;
+  display: flex;
+  margin: 0 auto;
+  gap: 5px;
+
+}
+
+.user__form-data>li {
+  width: 100%;
+}
+
+.user__form-data>.actions {
+  display: flex;
+  gap: 5px;
+  width: auto !important
+}
+
+.create-user__form {
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -234,11 +252,11 @@ table {
 
 }
 
-.user__form-data>li {
+.create-user__form>li {
   width: 40%;
 }
 
-.user__form-data>.actions {
+.create-user__form>.actions {
   display: flex;
   gap: 5px;
   width: auto !important

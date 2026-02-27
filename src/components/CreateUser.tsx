@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { roles } from "../constants";
-
-interface CreateUserProps {
-  onSubmit: (userData: {
-    username: string;
-    email: string;
-    role: string;
-    password: string;
-  }) => Promise<void>;
-  onCancel: () => void;
-}
+import type { CreateUserProps } from "../types/auth";
 
 export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
   const [newUser, setNewUser] = useState({
@@ -50,7 +41,6 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
     try {
       const { confirmPassword, ...userData } = newUser;
       await onSubmit(userData);
-      // Сброс формы после успешной отправки
       setNewUser({
         username: "",
         email: "",
@@ -60,7 +50,6 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
       });
       setPasswordError(null);
     } catch (error) {
-      // Ошибка уже обработана в родительском компоненте
     } finally {
       setIsSubmitting(false);
     }
