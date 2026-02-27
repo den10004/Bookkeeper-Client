@@ -48,6 +48,7 @@ export default function Users() {
 
   const handleSave = async (userId: string, formData: Partial<User>) => {
     if (!auth.accessToken) return;
+
     try {
       await api.changeUsers(auth.accessToken, userId, formData);
       setAccountants(

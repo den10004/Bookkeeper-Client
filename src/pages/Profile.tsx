@@ -6,7 +6,6 @@ import { api } from "../services/api";
 import Applications from "../components/Applications";
 import AddApplication from "../components/AddApplication";
 import Account from "../components/Account";
-
 import Users from "../components/Users";
 
 export default function Profile() {

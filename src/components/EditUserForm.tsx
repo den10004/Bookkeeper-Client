@@ -20,7 +20,6 @@ export default function EditUserForm({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Сбрасываем форму при изменении пользователя
   useEffect(() => {
     setEditForm({
       username: user.username,
@@ -46,7 +45,6 @@ export default function EditUserForm({
     try {
       await onSave(String(user.id), editForm);
     } catch (error) {
-      // Ошибка обрабатывается в родительском компоненте
       console.error("Ошибка при сохранении:", error);
     } finally {
       setIsSubmitting(false);
