@@ -11,7 +11,7 @@ export const errorDictionary: Record<string, string> = {
   "Network Error": "Ошибка соединения с сервером",
   "Failed to fetch": "Не удалось связаться с сервером",
   Unauthorized: "Не авторизован",
-  Forbidden: "Доступ запрещен",
+  Forbidden: "Доступ запрещён",
   "Not Found": "Пользователь не найден",
   "Internal Server Error": "Внутренняя ошибка сервера",
 };

@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import type { User } from "../types/auth";
 import { api } from "../services/api";
 import { errorDictionary, roles } from "../constants";
+import CreateUserForm from "./CreateUser";
 
 export default function Users() {
   const { auth } = useAuth();
@@ -12,14 +13,7 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<User>>({});
-
   const [isCreating, setIsCreating] = useState(false);
-  const [newUser, setNewUser] = useState({
-    username: "",
-    email: "",
-    role: "manager",
-    password: "",
-  });
 
   const fetchUsers = async () => {
     if (!auth.accessToken) return;
@@ -127,58 +121,40 @@ export default function Users() {
 
   const handleCreateClick = () => {
     setIsCreating(true);
-    setNewUser({
-      username: "",
-      email: "",
-      role: "manager",
-      password: "",
-    });
     setError(null);
   };
 
   const handleCreateCancel = () => {
     setIsCreating(false);
-    setNewUser({
-      username: "",
-      email: "",
-      role: "manager",
-      password: "",
-    });
     setError(null);
   };
 
-  const handleNewUserChange = (field: string, value: string) => {
-    setNewUser((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleCreateUser = async (userData: {
+    username: string;
+    email: string;
+    role: string;
+    password: string;
+  }) => {
     if (!auth.accessToken) return;
 
     try {
-      const createdUser = await api.createUser(auth.accessToken, newUser);
+      const createdUser = await api.createUser(auth.accessToken, userData);
       const completeUser: User = {
         id: createdUser.id,
-        username: createdUser.username || newUser.username,
-        email: createdUser.email || newUser.email,
-        role: createdUser.role || newUser.role,
+        username: createdUser.username || userData.username,
+        email: createdUser.email || userData.email,
+        role: createdUser.role || userData.role,
       };
 
       setAccountants([...accountants, completeUser]);
       setIsCreating(false);
-      setNewUser({
-        username: "",
-        email: "",
-        role: "",
-        password: "",
-      });
       setError(null);
     } catch (err: any) {
       const errorText = err?.message;
       const userMessage = errorDictionary[errorText] || errorText;
       alert(userMessage);
       setError("Не удалось создать пользователя");
+      throw err; // Пробрасываем ошибку для компонента формы
     }
   };
 
@@ -229,7 +205,7 @@ export default function Users() {
 
       {isOpen && (
         <div className="users__block">
-          {loadingAccountants && <p>Загрузка...</p>}
+          {loadingAccountants && <p>Загрузка</p>}
 
           {error && <p className="error">{error}</p>}
 
@@ -240,87 +216,10 @@ export default function Users() {
             </div>
 
             {isCreating && (
-              <div className="create-user-form">
-                <h4>Создать нового пользователя</h4>
-                <form className="user__form" onSubmit={handleCreateUser}>
-                  <input
-                    type="text"
-                    placeholder="Имя"
-                    autoComplete="name"
-                    id="name"
-                    name="name"
-                    required
-                    minLength={2}
-                    maxLength={50}
-                    value={newUser.username}
-                    onChange={(e) =>
-                      handleNewUserChange("username", e.target.value)
-                    }
-                  />
-
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    autoComplete="Email"
-                    id="Email"
-                    name="email"
-                    required
-                    value={newUser.email}
-                    onChange={(e) =>
-                      handleNewUserChange("email", e.target.value)
-                    }
-                  />
-
-                  <input
-                    type="password"
-                    placeholder="password"
-                    autoComplete="password"
-                    id="password"
-                    name="password"
-                    required
-                    minLength={6}
-                    maxLength={50}
-                    pattern="^(?=.*[A-Za-z])(?=.*\d).*"
-                    title="Пароль должен содержать хотя бы одну букву и одну цифру"
-                    value={newUser.password}
-                    onChange={(e) =>
-                      handleNewUserChange("password", e.target.value)
-                    }
-                  />
-
-                  <select
-                    value={newUser.role}
-                    name="role"
-                    id="role"
-                    onChange={(e) =>
-                      handleNewUserChange("role", e.target.value)
-                    }
-                    required
-                  >
-                    {Object.entries(roles).map(([key, value]) => (
-                      <option key={key} value={key}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="actions">
-                    <button
-                      type="submit"
-                      style={{ background: "var(--green)" }}
-                    >
-                      Сохранить
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCreateCancel}
-                      style={{ background: "var(--blue)" }}
-                    >
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              </div>
+              <CreateUserForm
+                onSubmit={handleCreateUser}
+                onCancel={handleCreateCancel}
+              />
             )}
 
             <ul className="user__form-header">
@@ -337,6 +236,7 @@ export default function Users() {
                 <strong>Действия</strong>
               </li>
             </ul>
+
             {accountants.map((accountant) => (
               <div key={accountant.id}>
                 {editingId === accountant.id ? (
@@ -345,6 +245,8 @@ export default function Users() {
                       <li>
                         <input
                           type="text"
+                          pattern="[A-Za-zА-Яа-яЁё\s]+"
+                          title="Используйте только буквы и пробелы"
                           value={editForm.username || ""}
                           onChange={(e) =>
                             handleInputChange("username", e.target.value)
@@ -368,7 +270,7 @@ export default function Users() {
                         <input
                           type="password"
                           value={editForm.password || ""}
-                          placeholder="Введите тек"
+                          placeholder="Пароль текущий или новый"
                           onChange={(e) =>
                             handleInputChange("password", e.target.value)
                           }

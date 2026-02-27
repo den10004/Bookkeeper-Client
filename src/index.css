@@ -214,11 +214,15 @@ table {
 
 .user__form {
   display: flex;
+  flex-direction: column;
+  max-width: 500px;
+  margin: 0 auto;
   gap: 5px;
 }
 
 .create-user-form>h4 {
   margin: 10px 0;
+  text-align: center;
 }
 
 
@@ -226,7 +230,6 @@ table {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  width: 100%;
   gap: 10px;
 
 }
