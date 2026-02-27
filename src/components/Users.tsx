@@ -14,7 +14,6 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  console.log(auth.user?.id);
 
   const fetchUsers = async () => {
     if (!auth.accessToken) return;
