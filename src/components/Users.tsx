@@ -48,9 +48,6 @@ export default function Users() {
 
   const handleSave = async (userId: string, formData: Partial<User>) => {
     if (!auth.accessToken) return;
-
-    const originalUser = accountants.find((u) => u.id === Number(userId));
-
     try {
       await api.changeUsers(auth.accessToken, userId, formData);
       setAccountants(
@@ -66,10 +63,7 @@ export default function Users() {
       const userMessage = errorDictionary[errorText] || errorText;
       alert(userMessage);
       setError(userMessage);
-
-      // Восстанавливаем оригинальные данные в случае ошибки не нужно,
-      // так как форма закрывается только при успешном сохранении
-      throw err; // Пробрасываем ошибку для компонента формы
+      throw err;
     }
   };
 
