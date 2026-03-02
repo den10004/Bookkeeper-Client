@@ -43,6 +43,7 @@ export interface DownloadLink {
 }
 
 export interface Application {
+  userId: number;
   id: string;
   name?: string;
   Creator?: {

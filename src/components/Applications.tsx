@@ -3,6 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
+import Toast from "./Toast";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -28,6 +29,18 @@ export default function Applications({
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const socketRef = useRef<ReturnType<typeof createSocket>>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "info" | "warning" | "error";
+  } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   const lastCardRef = useCallback(
     (node: HTMLDivElement) => {
       if (loadingApps) return;
@@ -53,38 +66,95 @@ export default function Applications({
   }, [initialApplications]);
 
   useEffect(() => {
-    if (!auth?.accessToken) return;
-
-    if (!auth.accessToken) {
-      console.warn("Нет токена → сокет не подключается");
-      return;
+    if (Notification.permission === "default") {
+      Notification.requestPermission().then((permission) => {
+        console.log("Разрешение на уведомления:", permission);
+        if (permission === "granted") {
+          console.log("Уведомления разрешены!");
+        } else if (permission === "denied") {
+          console.warn("Пользователь запретил уведомления");
+        }
+      });
     }
+  }, []);
+
+  useEffect(() => {
+    if (!auth?.accessToken) return;
 
     const socket = createSocket(auth.accessToken);
     if (!socket) return;
 
-    socketRef.current = socket;
     socket.connect();
 
-    socket.on("connect_error", (err) => {
-      console.error("Ошибка подключения сокета:", err.message);
+    socket.on("application:created", (newApp: Application) => {
+      setApplications((prev) => {
+        if (prev.some((a) => a.id === newApp.id)) return prev;
+        return [newApp, ...prev];
+      });
+
+      const currentUserId = auth?.user?.id;
+      if (currentUserId && newApp.userId !== currentUserId) {
+        setToast({
+          message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
+          type: "success",
+        });
+        if (Notification.permission === "granted") {
+          new Notification("Новая заявка!", {
+            body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
+            icon: "/favicon.ico",
+            tag: `new-app-${newApp.id}`,
+          });
+        }
+      }
     });
 
-    socket.on("application:created", (newApp) => {
-      setApplications((prev) => [
-        newApp,
-        ...prev.filter((a) => a.id !== newApp.id),
-      ]);
-    });
+    socket.on("application:updated", (updatedApp: Application) => {
+      console.log("Обновлена заявка:", updatedApp.id);
 
-    socket.on("application:updated", (updatedApp) => {
       setApplications((prev) =>
         prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)),
       );
+
+      const currentUserId = auth?.user?.id;
+      if (currentUserId && updatedApp.userId !== currentUserId) {
+        const appName = updatedApp.name || "Без названия";
+        const creatorName = updatedApp.Creator?.username || "менеджер";
+
+        setToast({
+          message: `Заявка обновлена: ${appName} (изменения от ${creatorName})`,
+          type: "success",
+        });
+
+        if (Notification.permission === "granted") {
+          new Notification("Заявка обновлена!", {
+            body: `Заявка: ${appName}\nИзменения от: ${creatorName}`,
+            icon: "/favicon.ico",
+            tag: `update-app-${updatedApp.id}`,
+          });
+        }
+      }
     });
 
     socket.on("application:deleted", (payload: { id: string | number }) => {
       const deletedId = String(payload.id);
+
+      const currentUserId = auth?.user?.id;
+      setApplications((prev) => prev.filter((a) => String(a.id) !== deletedId));
+
+      if (currentUserId) {
+        setToast({
+          message: `Заявка удалена (ID: ${payload.id})`,
+          type: "error",
+        });
+
+        if (Notification.permission === "granted") {
+          new Notification("Заявка удалена!", {
+            body: `Заявка с ID ${payload.id} была удалена из системы`,
+            icon: "/favicon.ico",
+            tag: `delete-app-${payload.id}`,
+          });
+        }
+      }
 
       setApplications((prev) => {
         const newList = prev.filter((a) => String(a.id) !== deletedId);
@@ -119,12 +189,22 @@ export default function Applications({
       ) : (
         <>
           <div className="cards__block">
+            {toast && (
+              <Toast
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(null)}
+              />
+            )}
             {applications.slice(0, visibleCount).map((application, index) => {
               const preload = index < 3;
 
               if (index === visibleCount - 1) {
                 return (
-                  <div ref={lastCardRef} key={application.id}>
+                  <div
+                    ref={index === visibleCount - 1 ? lastCardRef : null}
+                    key={application.id}
+                  >
                     <LazyApplicationCard
                       application={application}
                       onApplicationUpdated={onApplicationUpdated}
