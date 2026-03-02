@@ -43,6 +43,9 @@ export interface DownloadLink {
 }
 
 export interface Application {
+  assignedAccountantId: number;
+  updatedBy: number;
+  Updater: any;
   userId: number;
   id: string;
   name?: string;

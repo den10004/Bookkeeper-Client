@@ -93,11 +93,20 @@ export default function Applications({
       });
 
       const currentUserId = auth?.user?.id;
-      if (currentUserId && newApp.userId !== currentUserId) {
+      const currentUserRole = auth?.user?.role;
+
+      const shouldNotify =
+        currentUserId &&
+        (currentUserRole === "DIRECTOR" ||
+          newApp.assignedAccountantId === currentUserId);
+
+      // Не показываем уведомление создателю заявки
+      if (shouldNotify && newApp.userId !== currentUserId) {
         setToast({
           message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
           type: "success",
         });
+
         if (Notification.permission === "granted") {
           new Notification("Новая заявка!", {
             body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
@@ -116,18 +125,26 @@ export default function Applications({
       );
 
       const currentUserId = auth?.user?.id;
-      if (currentUserId && updatedApp.userId !== currentUserId) {
+      const currentUserRole = auth?.user?.role;
+
+      const shouldNotify =
+        currentUserId &&
+        (currentUserRole === "DIRECTOR" ||
+          updatedApp.assignedAccountantId === currentUserId ||
+          // Создатель заявки (менеджер) получает уведомление
+          updatedApp.userId === currentUserId);
+      if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
         const appName = updatedApp.name || "Без названия";
-        const creatorName = updatedApp.Creator?.username || "менеджер";
+        const updaterName = updatedApp.Updater?.username || "менеджер";
 
         setToast({
-          message: `Заявка обновлена: ${appName} (изменения от ${creatorName})`,
+          message: `Заявка обновлена: ${appName} (изменения от ${updaterName})`,
           type: "success",
         });
 
         if (Notification.permission === "granted") {
           new Notification("Заявка обновлена!", {
-            body: `Заявка: ${appName}\nИзменения от: ${creatorName}`,
+            body: `Заявка: ${appName}\nИзменения от: ${updaterName}`,
             icon: "/favicon.ico",
             tag: `update-app-${updatedApp.id}`,
           });
@@ -135,32 +152,37 @@ export default function Applications({
       }
     });
 
-    socket.on("application:deleted", (payload: { id: string | number }) => {
-      const deletedId = String(payload.id);
+    socket.on(
+      "application:deleted",
+      (payload: { id: string | number; deletedBy?: number }) => {
+        const deletedId = String(payload.id);
 
-      const currentUserId = auth?.user?.id;
-      setApplications((prev) => prev.filter((a) => String(a.id) !== deletedId));
+        setApplications((prev) =>
+          prev.filter((a) => String(a.id) !== deletedId),
+        );
 
-      if (currentUserId) {
-        setToast({
-          message: `Заявка удалена (ID: ${payload.id})`,
-          type: "error",
-        });
+        const currentUserId = auth?.user?.id;
+        const currentUserRole = auth?.user?.role;
 
-        if (Notification.permission === "granted") {
-          new Notification("Заявка удалена!", {
-            body: `Заявка с ID ${payload.id} была удалена из системы`,
-            icon: "/favicon.ico",
-            tag: `delete-app-${payload.id}`,
+        const shouldNotify =
+          currentUserId && (currentUserRole === "DIRECTOR" || true);
+
+        if (shouldNotify && payload.deletedBy !== currentUserId) {
+          setToast({
+            message: `Заявка удалена (ID: ${payload.id})`,
+            type: "error",
           });
-        }
-      }
 
-      setApplications((prev) => {
-        const newList = prev.filter((a) => String(a.id) !== deletedId);
-        return newList;
-      });
-    });
+          if (Notification.permission === "granted") {
+            new Notification("Заявка удалена!", {
+              body: `Заявка с ID ${payload.id} была удалена из системы`,
+              icon: "/favicon.ico",
+              tag: `delete-app-${payload.id}`,
+            });
+          }
+        }
+      },
+    );
 
     return () => {
       socket.off("application:created");
