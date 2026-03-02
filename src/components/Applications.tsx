@@ -27,6 +27,7 @@ export default function Applications({
   const [visibleCount, setVisibleCount] = useState(5);
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
+  const socketRef = useRef<ReturnType<typeof createSocket>>(null);
   const lastCardRef = useCallback(
     (node: HTMLDivElement) => {
       if (loadingApps) return;
@@ -62,23 +63,14 @@ export default function Applications({
     const socket = createSocket(auth.accessToken);
     if (!socket) return;
 
+    socketRef.current = socket;
     socket.connect();
-
-    socket.on("connect", () => {
-      console.log("Socket успешно подключён");
-    });
 
     socket.on("connect_error", (err) => {
       console.error("Ошибка подключения сокета:", err.message);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("Сокет отключён:", reason);
-    });
-
-    // твои слушатели
     socket.on("application:created", (newApp) => {
-      console.log("Получена новая заявка:", newApp.id);
       setApplications((prev) => [
         newApp,
         ...prev.filter((a) => a.id !== newApp.id),
@@ -86,19 +78,29 @@ export default function Applications({
     });
 
     socket.on("application:updated", (updatedApp) => {
-      console.log("Обновлена заявка:", updatedApp.id);
       setApplications((prev) =>
         prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)),
       );
     });
 
-    socket.on("application:deleted", ({ id }) => {
-      console.log("Удалена заявка:", id);
-      setApplications((prev) => prev.filter((a) => a.id !== id));
+    socket.on("application:deleted", (payload: { id: string | number }) => {
+      const deletedId = String(payload.id);
+
+      setApplications((prev) => {
+        const newList = prev.filter((a) => String(a.id) !== deletedId);
+        return newList;
+      });
     });
 
     return () => {
+      socket.off("application:created");
+      socket.off("application:updated");
+      socket.off("application:deleted");
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("disconnect");
       socket.disconnect();
+      socketRef.current = null;
     };
   }, [auth?.accessToken]);
 

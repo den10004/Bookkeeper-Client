@@ -1,5 +1,3 @@
-// src/hooks/socket.ts → теперь это не модуль-сокет, а функция-фабрика
-
 import { io, Socket } from "socket.io-client";
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
