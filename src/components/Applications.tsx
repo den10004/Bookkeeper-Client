@@ -1,6 +1,8 @@
+import { useAuth } from "../context/AuthContext";
 import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
-import { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createSocket } from "../hooks/socket";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -15,10 +17,13 @@ interface ApplicationsProps {
 export default function Applications({
   loadingApps,
   appsError,
-  applications,
+  applications: initialApplications,
   onApplicationUpdated,
   onApplicationsUpdate,
 }: ApplicationsProps) {
+  const { auth } = useAuth();
+  const [applications, setApplications] =
+    useState<Application[]>(initialApplications);
   const [visibleCount, setVisibleCount] = useState(5);
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
@@ -41,6 +46,61 @@ export default function Applications({
     },
     [loadingApps, hasMore, applications.length],
   );
+
+  useEffect(() => {
+    setApplications(initialApplications);
+  }, [initialApplications]);
+
+  useEffect(() => {
+    if (!auth?.accessToken) return;
+
+    if (!auth.accessToken) {
+      console.warn("Нет токена → сокет не подключается");
+      return;
+    }
+
+    const socket = createSocket(auth.accessToken);
+    if (!socket) return;
+
+    socket.connect();
+
+    socket.on("connect", () => {
+      console.log("Socket успешно подключён");
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Ошибка подключения сокета:", err.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Сокет отключён:", reason);
+    });
+
+    // твои слушатели
+    socket.on("application:created", (newApp) => {
+      console.log("Получена новая заявка:", newApp.id);
+      setApplications((prev) => [
+        newApp,
+        ...prev.filter((a) => a.id !== newApp.id),
+      ]);
+    });
+
+    socket.on("application:updated", (updatedApp) => {
+      console.log("Обновлена заявка:", updatedApp.id);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)),
+      );
+    });
+
+    socket.on("application:deleted", ({ id }) => {
+      console.log("Удалена заявка:", id);
+      setApplications((prev) => prev.filter((a) => a.id !== id));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [auth?.accessToken]);
 
   return (
     <div>
