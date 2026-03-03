@@ -3,28 +3,12 @@ import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 import type { Application, User } from "../types/auth";
 import FileUploader from "./FileUploader";
+import { DOCUMENT_FORMATS, DOCUMENT_TYPES, REQUEST_TYPES } from "../constants";
 
 interface AddApplicationProps {
   onApplicationAdded?: (application: Application) => void;
   onApplicationsUpdate?: () => void;
 }
-
-// Константы для типов
-const REQUEST_TYPES = {
-  NEW_CLIENT: "new_client",
-  EXISTING_CLIENT: "existing_client",
-  DOCUMENT_REQUEST: "document_request",
-} as const;
-
-const DOCUMENT_TYPES = {
-  WORK_CERTIFICATE: "work_certificate",
-  RECONCILIATION_ACT: "reconciliation_act",
-} as const;
-
-const DOCUMENT_FORMATS = {
-  PDF: "pdf",
-  EDO: "edo",
-} as const;
 
 export default function AddApplication({
   onApplicationAdded,
@@ -44,7 +28,6 @@ export default function AddApplication({
     cost: "",
     quantity: "",
     comment: "",
-    // Поля для document_request
     documentType: "",
     inn: "",
     accountNumber: "",
@@ -92,7 +75,6 @@ export default function AddApplication({
     const value = e.target.value as keyof typeof REQUEST_TYPES;
     setRequestType(value);
 
-    // Сброс полей при смене типа
     if (value === "DOCUMENT_REQUEST") {
       setFormData((prev) => ({
         ...prev,
@@ -179,14 +161,12 @@ export default function AddApplication({
         return false;
       }
 
-      // Валидация ИНН (10 или 12 цифр)
       const innRegex = /^\d{10}$|^\d{12}$/;
       if (!innRegex.test(formData.inn)) {
         setError("ИНН должен содержать 10 или 12 цифр");
         return false;
       }
 
-      // Валидация дат
       const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
       if (!dateRegex.test(formData.periodFrom)) {
         setError("Дата начала должна быть в формате ДД.ММ.ГГГГ");
@@ -242,7 +222,6 @@ export default function AddApplication({
       }
 
       if (requestType === "DOCUMENT_REQUEST") {
-        // Поля для document_request
         formDataToSend.append("documentType", formData.documentType);
         formDataToSend.append("inn", formData.inn);
         formDataToSend.append("accountNumber", formData.accountNumber);
@@ -251,12 +230,9 @@ export default function AddApplication({
         formDataToSend.append("documentFormat", formData.documentFormat);
         formDataToSend.append("totalAmount", formData.totalAmount);
       } else {
-        // Поля для обычных заявок
         formDataToSend.append("cost", formData.cost);
         formDataToSend.append("quantity", formData.quantity);
       }
-
-      // Файлы
       files.forEach((file) => {
         formDataToSend.append("files", file);
       });

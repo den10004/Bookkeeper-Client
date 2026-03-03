@@ -31,10 +31,10 @@ export default function Toast({
   };
 
   const colors = {
-    success: "#4caf50",
-    info: "#2196f3",
-    warning: "#ff9800",
-    error: "#f44336",
+    success: "var(--green)",
+    info: "var(--blue)",
+    warning: "var(--red)0",
+    error: "var(--red)",
   };
 
   return (

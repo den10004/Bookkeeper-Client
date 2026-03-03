@@ -12,7 +12,6 @@ interface ApplicationCardProps {
   onApplicationsUpdate?: () => void;
 }
 
-// Константы для типов
 const REQUEST_TYPES = {
   NEW_CLIENT: "new_client",
   EXISTING_CLIENT: "existing_client",
@@ -410,243 +409,290 @@ export default function ApplicationCard({
     );
   };
 
-  // Определяем, какие поля показывать в зависимости от типа заявки
   const showDocumentFields = isDocumentRequest;
 
   return (
     <div
-      className="applications__card"
+      className={`applications__card ${isEditing ? "editing" : ""}`}
       style={{
         border: isEditing ? "2px solid var(--green)" : "1px solid var(--gray)",
       }}
     >
-      {/* Тип заявки */}
-      {isEditing ? (
-        <div className="div1" style={{ gridColumn: "span 2" }}>
-          <div className="applications">
-            <label>Тип запроса:</label>
-            <select
-              value={
-                (editFormData.requestType as string) || application.requestType
-              }
-              onChange={handleRequestTypeChange}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <option value={REQUEST_TYPES.NEW_CLIENT}>Новый клиент</option>
-              <option value={REQUEST_TYPES.EXISTING_CLIENT}>
-                Существующий клиент
-              </option>
-              <option value={REQUEST_TYPES.DOCUMENT_REQUEST}>
-                Запрос документа
-              </option>
-            </select>
+      {/* Заголовок */}
+      <div className="applications__header">
+        <h3 className="applications__title">
+          {application.name || "Без названия"}
+          <span className="applications__id">#{application.id}</span>
+        </h3>
+
+        <div className="applications__info">
+          <div className="applications__info-item">
+            <span className="applications__info-label">Создатель:</span>
+            <span className="applications__field-value">
+              {application.Creator?.username || "Не указано"}
+            </span>
           </div>
-        </div>
-      ) : (
-        <div className="div1" style={{ gridColumn: "span 2" }}>
-          <div className="applications">
-            <span>Тип запроса:</span>
-            <span className={`badge badge-${application.requestType}`}>
-              {renderEditableField("requestType", "Тип запроса")}
+          <div className="applications__info-item">
+            <span className="applications__info-label">Бухгалтер:</span>
+            <span className="applications__field-value">
+              {application.AssignedAccountant?.username || "Не назначено"}
+            </span>
+          </div>
+          <div className="applications__info-item">
+            <span className="applications__info-label">Дата:</span>
+            <span className="applications__field-value">
+              {application.createdAt
+                ? new Date(application.createdAt).toLocaleDateString()
+                : "Не указана"}
             </span>
           </div>
         </div>
-      )}
-
-      <div className="div1">
-        {renderEditableField(
-          "name",
-          showDocumentFields ? "Название документа" : "Название франшизы",
-          "text",
+        {!isEditing && (
+          <span
+            className={`applications__type-badge ${application.requestType}`}
+          >
+            {renderEditableField("requestType", "")}
+          </span>
         )}
       </div>
 
-      <div className="div2">
-        <div className="applications">
-          <span>Создатель:</span>
-          <span>{application.Creator?.username || "Не указано"}</span>
+      <div className="applications__row">
+        <div className="applications__field-group">
+          <div className="applications__field">
+            <span className="applications__field-label">Организация:</span>
+            <span className="applications__field-value">
+              {isEditing
+                ? renderEditableField("organization", "")
+                : application.organization || "Не указано"}
+            </span>
+          </div>
         </div>
-      </div>
 
-      <div className="div3">
-        <div className="applications">
-          <span>Бухгалтер:</span>
-          <span>
-            {application.AssignedAccountant?.username || "Не назначено"}
-          </span>
-        </div>
-      </div>
-
-      <div className="div4">
-        <div className="applications">
-          <span>Дата создания:</span>
-          <span>
-            {application.createdAt
-              ? new Date(application.createdAt).toLocaleDateString()
-              : "Дата не указана"}
-          </span>
-        </div>
-      </div>
-
-      <div className="div5">
-        {renderEditableField("organization", "Организация")}
-      </div>
-
-      {/* Поля в зависимости от типа заявки */}
-      {showDocumentFields ? (
-        // Поля для document_request
-        <>
-          <div className="div6">
-            {renderEditableField("documentType", "Тип документа", "select", [
-              {
-                value: DOCUMENT_TYPES.WORK_CERTIFICATE,
-                label: "Акт выполненных работ",
-              },
-              { value: DOCUMENT_TYPES.RECONCILIATION_ACT, label: "Акт сверки" },
-            ])}
-          </div>
-
-          <div className="div7">
-            {renderEditableField("inn", "ИНН", "text")}
-          </div>
-
-          <div className="div8">
-            {renderEditableField("accountNumber", "Номер счета", "text")}
-          </div>
-
-          <div className="div6">
-            {renderEditableField("periodFrom", "Период с", "text")}
-          </div>
-
-          <div className="div7">
-            {renderEditableField("periodTo", "Период по", "text")}
-          </div>
-
-          <div className="div8">
-            {renderEditableField("documentFormat", "Формат", "select", [
-              { value: DOCUMENT_FORMATS.PDF, label: "PDF" },
-              { value: DOCUMENT_FORMATS.EDO, label: "ЭДО" },
-            ])}
-          </div>
-
-          <div className="div6">
-            {renderEditableField("totalAmount", "Итоговая сумма", "number")}
-          </div>
-        </>
-      ) : (
-        // Поля для обычных заявок
-        <>
-          <div className="div6">
-            {renderEditableField("quantity", "Количество", "number")}
-          </div>
-
-          <div className="div7">
-            {renderEditableField("cost", "Стоимость", "number")}
-          </div>
-        </>
-      )}
-
-      {/* Комментарий - занимает больше места */}
-      <div className="div8" style={{ gridColumn: "span 2" }}>
-        {renderEditableField("comment", "Комментарии", "textarea")}
-      </div>
-
-      {/* Кнопки редактирования */}
-      <div className="application__edit">
-        {isEditing ? (
+        {showDocumentFields ? (
           <>
-            <button
-              onClick={saveChanges}
-              disabled={isUpdating}
-              style={{
-                backgroundColor: isUpdating ? "var(--gray)" : "var(--green)",
-              }}
-            >
-              {isUpdating ? "Сохранение..." : "Сохранить"}
-            </button>
-            <button
-              onClick={cancelEditing}
-              disabled={isUpdating}
-              style={{
-                backgroundColor: "var(--gray)",
-              }}
-            >
-              Отмена
-            </button>
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("documentType", "", "select", [
+                        {
+                          value: DOCUMENT_TYPES.WORK_CERTIFICATE,
+                          label: "Акт выполненных работ",
+                        },
+                        {
+                          value: DOCUMENT_TYPES.RECONCILIATION_ACT,
+                          label: "Акт сверки",
+                        },
+                      ])
+                    : renderEditableField("documentType", "")}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">ИНН:</span>
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("inn", "")
+                    : application.inn || "Не указан"}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Счёт:</span>
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("accountNumber", "")
+                    : application.accountNumber || "Не указан"}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Период:</span>
+                <span className="applications__field-value">
+                  {isEditing ? (
+                    <>
+                      {renderEditableField("periodFrom", "")} -{" "}
+                      {renderEditableField("periodTo", "")}
+                    </>
+                  ) : (
+                    <>
+                      {application.periodFrom
+                        ? new Date(application.periodFrom).toLocaleDateString()
+                        : ""}{" "}
+                      -{" "}
+                      {application.periodTo
+                        ? new Date(application.periodTo).toLocaleDateString()
+                        : ""}
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Формат:</span>
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("documentFormat", "", "select", [
+                        { value: DOCUMENT_FORMATS.PDF, label: "PDF" },
+                        { value: DOCUMENT_FORMATS.EDO, label: "ЭДО" },
+                      ])
+                    : renderEditableField("documentFormat", "")}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Сумма:</span>
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("totalAmount", "", "number")
+                    : application.totalAmount
+                      ? new Intl.NumberFormat("ru-RU", {
+                          style: "currency",
+                          currency: "RUB",
+                        }).format(application.totalAmount)
+                      : "Не указана"}
+                </span>
+              </div>
+            </div>
           </>
         ) : (
-          <button
-            onClick={startEditing}
-            style={{
-              backgroundColor: "var(--green)",
-            }}
-          >
-            Редактировать
-          </button>
-        )}
-        {auth.user && auth.user.role === "director" && !isEditing && (
-          <button
-            onClick={deleteCard}
-            disabled={isDeleting}
-            style={{
-              backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
-            }}
-          >
-            {isDeleting ? "Удаление..." : "Удалить"}
-          </button>
+          <>
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Кол-во:</span>
+                <span className="applications__field-value">
+                  {isEditing
+                    ? renderEditableField("quantity", "", "number")
+                    : application.quantity || 0}
+                </span>
+              </div>
+            </div>
+
+            <div className="applications__field-group">
+              <div className="applications__field">
+                <span className="applications__field-label">Стоимость:</span>
+                <span className="applications__field-value currency">
+                  {isEditing
+                    ? renderEditableField("cost", "", "number")
+                    : application.cost
+                      ? new Intl.NumberFormat("ru-RU", {
+                          style: "currency",
+                          currency: "RUB",
+                        }).format(application.cost)
+                      : "Не указана"}
+                </span>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Файлы */}
-      <div className="div10">
-        <div className="applications">
-          <span>{isEditing ? "Текущие файлы:" : "Файлы:"}</span>
-          <div className="download-card">
-            {application.files && application.files.length > 0 ? (
-              application.files.map((file, index) => {
-                const downloadLink = application.downloadLinks?.[index];
-
-                return (
-                  <div
-                    key={index}
-                    onClick={(e) => downloadFile(file, downloadLink, e)}
-                    className="downloadLink-block"
-                    onMouseEnter={(e) =>
-                      downloadLink &&
-                      (e.currentTarget.style.backgroundColor = "var(--bg2)")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "var(--bg2)")
-                    }
-                  >
-                    <p>
-                      {file.original}
-                      {downloadLink && " ⬇️"}
-                    </p>
-                    <p
-                      className="download-link"
-                      style={{ color: "var(--gray)" }}
-                    >
-                      Размер: {(file.size / 1024).toFixed(2)} KB
-                    </p>
-                    {!downloadLink && <p>Ссылка для скачивания недоступна</p>}
-                  </div>
-                );
-              })
-            ) : (
-              <span>Файлов нет</span>
-            )}
+      <div className="applications__row2">
+        <div className="applications__field-group">
+          <div className="applications__field" style={{ width: "100%" }}>
+            <span className="applications__field-label">Комментарий:</span>
+            <span className="applications__field-value">
+              {isEditing ? (
+                <div>{renderEditableField("comment", "", "textarea")}</div>
+              ) : (
+                application.comment || "Нет комментариев"
+              )}
+            </span>
           </div>
-          {isEditing && (
-            <FileUploader
-              onFilesChange={setEditFiles}
-              initialFiles={editFiles}
-              disabled={isUpdating}
-              label="Прикрепить файлы (можно несколько)"
-            />
+        </div>
+
+        <div>
+          {isEditing ? (
+            <>
+              <button
+                onClick={saveChanges}
+                disabled={isUpdating}
+                style={{
+                  backgroundColor: isUpdating ? "var(--gray)" : "var(--green)",
+                }}
+              >
+                {isUpdating ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button
+                onClick={cancelEditing}
+                disabled={isUpdating}
+                style={{ backgroundColor: "var(--gray)" }}
+              >
+                ✕ Отмена
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={startEditing}
+                style={{ backgroundColor: "var(--green)" }}
+              >
+                Редактировать
+              </button>
+              {auth.user && auth.user.role === "director" && (
+                <button
+                  onClick={deleteCard}
+                  disabled={isDeleting}
+                  style={{
+                    backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
+                  }}
+                >
+                  {isDeleting ? "Удаление..." : "Удалить"}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      <div className="applications__files">
+        <div className="applications__files-title">Файлы:</div>
+        {application.files && application.files.length > 0 ? (
+          <div className="applications__files-list">
+            {application.files.map((file, index) => {
+              const downloadLink = application.downloadLinks?.[index];
+              return (
+                <div
+                  key={index}
+                  className="applications__file-item"
+                  onClick={(e) => downloadFile(file, downloadLink, e)}
+                >
+                  <span className="applications__file-name">
+                    {file.original}
+                  </span>
+                  <span className="applications__file-size">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>
+                  {downloadLink && " ⬇️"}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="applications__files-empty">Файлы отсутствуют</div>
+        )}
+      </div>
+
+      {isEditing && (
+        <div className="applications__files">
+          <FileUploader
+            onFilesChange={setEditFiles}
+            initialFiles={editFiles}
+            disabled={isUpdating}
+            label="Прикрепить файлы"
+          />
+        </div>
+      )}
     </div>
   );
 }

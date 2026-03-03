@@ -166,11 +166,6 @@ export default function Applications({
           currentUserId && (currentUserRole === "DIRECTOR" || true);
 
         if (shouldNotify && payload.deletedBy !== currentUserId) {
-          setToast({
-            message: `Заявка удалена (ID: ${payload.id})`,
-            type: "error",
-          });
-
           if (Notification.permission === "granted") {
             new Notification("Заявка удалена!", {
               body: `Заявка с ID ${payload.id} была удалена из системы`,

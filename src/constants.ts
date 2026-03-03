@@ -16,3 +16,19 @@ export const errorDictionary: Record<string, string> = {
   "Not Found": "Пользователь не найден",
   "Internal Server Error": "Внутренняя ошибка сервера",
 };
+
+export const REQUEST_TYPES = {
+  NEW_CLIENT: "new_client",
+  EXISTING_CLIENT: "existing_client",
+  DOCUMENT_REQUEST: "document_request",
+} as const;
+
+export const DOCUMENT_TYPES = {
+  WORK_CERTIFICATE: "work_certificate",
+  RECONCILIATION_ACT: "reconciliation_act",
+} as const;
+
+export const DOCUMENT_FORMATS = {
+  PDF: "pdf",
+  EDO: "edo",
+} as const;
