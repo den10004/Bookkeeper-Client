@@ -302,7 +302,6 @@ export default function ApplicationCard({
       if (type === "select" && options) {
         return (
           <div className="applications">
-            <label>{label}:</label>
             <select
               value={(value as string) || ""}
               onChange={(e) => handleInputChange(e, field)}
@@ -322,7 +321,6 @@ export default function ApplicationCard({
       if (type === "textarea") {
         return (
           <div className="applications">
-            <label>{label}:</label>
             <textarea
               value={(value as string) || ""}
               onChange={(e) => handleInputChange(e, field)}
@@ -336,7 +334,6 @@ export default function ApplicationCard({
 
       return (
         <div className="applications">
-          <label>{label}:</label>
           <input
             type={type}
             value={(value as string | number) ?? ""}
@@ -401,7 +398,6 @@ export default function ApplicationCard({
         border: isEditing ? "2px solid var(--green)" : "1px solid var(--gray)",
       }}
     >
-      {/* Заголовок */}
       <div className="applications__header">
         <h3 className="applications__title">
           {application.name || "Без названия"}
@@ -500,7 +496,7 @@ export default function ApplicationCard({
                 <span className="applications__field-value">
                   {isEditing ? (
                     <>
-                      {renderEditableField("periodFrom", "")} -{" "}
+                      {renderEditableField("periodFrom", "")}-{" "}
                       {renderEditableField("periodTo", "")}
                     </>
                   ) : (
@@ -596,7 +592,7 @@ export default function ApplicationCard({
 
         <div>
           {isEditing ? (
-            <>
+            <div className="applications__bnts">
               <button
                 onClick={saveChanges}
                 disabled={isUpdating}
@@ -611,11 +607,11 @@ export default function ApplicationCard({
                 disabled={isUpdating}
                 style={{ backgroundColor: "var(--gray)" }}
               >
-                ✕ Отмена
+                Отмена
               </button>
-            </>
+            </div>
           ) : (
-            <>
+            <div className="applications__bnts">
               <button
                 onClick={startEditing}
                 style={{ backgroundColor: "var(--green)" }}
@@ -633,7 +629,7 @@ export default function ApplicationCard({
                   {isDeleting ? "Удаление..." : "Удалить"}
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

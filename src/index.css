@@ -43,7 +43,7 @@ label {
 
 input {
   width: 100%;
-  padding: 10px;
+  padding: 5px 10px;
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 16px;
@@ -53,7 +53,7 @@ input {
 
 
 select {
-  padding: 10px;
+  padding: 5px 10px;
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 16px;
@@ -86,7 +86,6 @@ button {
 textarea {
   width: 100%;
   padding: 8px;
-  border: "1px solid #ddd";
   border-radius: 4px;
   font-size: 14px;
   box-sizing: border-box;
@@ -368,10 +367,9 @@ table {
 .applications__field-value {
   color: var(--text-primary, var(--text-primary));
   font-weight: 500;
+  display: flex;
+  align-items: center;
 }
-
-
-
 
 .applications__type-badge {
   display: inline-flex;
@@ -418,7 +416,6 @@ table {
   margin-left: 8px;
 }
 
-/* Сетка для компактного отображения */
 .applications__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -426,14 +423,14 @@ table {
   margin-top: 16px;
 }
 
-/* Компактная карточка */
+
 .applications__card-compact {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-/* Группа кнопок */
+
 .applications__actions {
   display: flex;
   gap: 8px;
@@ -441,8 +438,6 @@ table {
 }
 
 
-
-/* Файлы */
 .applications__files {
   padding-top: 12px;
   border-top: 1px dashed var(--gray, #e0e0e0);
@@ -489,7 +484,7 @@ table {
   font-size: 0.75rem;
 }
 
-/* Режим редактирования */
+
 .applications__card.editing {
   background: var(--bg-edit, #fff8e7);
   border: 2px solid var(--green, #28a745);
@@ -504,7 +499,7 @@ table {
   margin-bottom: 4px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-secondary, #6c757d);
+  color: var(--text-secondary, var(--gray));
 }
 
 .applications__edit-field input,
@@ -541,10 +536,16 @@ table {
 
 .applications__info-label {
   font-weight: 600;
-  color: var(--text-secondary, #6c757d);
+  color: var(--text-secondary, var(--gray));
 }
 
-/* Адаптивность */
+.applications__bnts {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+}
+
 @media (max-width: 768px) {
   .applications__row {
     flex-direction: column;
