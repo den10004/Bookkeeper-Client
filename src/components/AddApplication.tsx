@@ -265,6 +265,28 @@ export default function AddApplication({
 
   const isDocumentRequest = requestType === "DOCUMENT_REQUEST";
 
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return "";
+    return dateString.split(".").reverse().join("-");
+  };
+
+  const formatDateForState = (dateValue: string) => {
+    if (!dateValue) return "";
+    return dateValue.split("-").reverse().join(".");
+  };
+
+  const handleDateChange = (e: any, handleInputChange: any) => {
+    const dateValue = e.target.value;
+    const formattedDate = formatDateForState(dateValue);
+
+    handleInputChange({
+      target: {
+        name: e.target.name,
+        value: formattedDate,
+      },
+    });
+  };
+
   return (
     <div className="addApplication">
       <button
@@ -293,7 +315,6 @@ export default function AddApplication({
               </select>
             </div>
 
-            {/* Название */}
             <div>
               <label htmlFor="name">
                 {isDocumentRequest ? "Название документа" : "Название франшизы"}{" "}
@@ -310,7 +331,6 @@ export default function AddApplication({
               />
             </div>
 
-            {/* Организация */}
             <div>
               <label htmlFor="organization">Организация *</label>
               <input
@@ -357,7 +377,6 @@ export default function AddApplication({
               </>
             )}
 
-            {/* Поля для document_request */}
             {isDocumentRequest && (
               <>
                 <div>
@@ -409,24 +428,23 @@ export default function AddApplication({
                   <div style={{ flex: 1 }}>
                     <label htmlFor="periodFrom">Период с *</label>
                     <input
-                      type="text"
+                      type="date"
                       id="periodFrom"
                       name="periodFrom"
-                      placeholder="ДД.ММ.ГГГГ"
-                      value={formData.periodFrom}
-                      onChange={handleInputChange}
+                      value={formatDateForInput(formData.periodFrom)}
+                      onChange={(e) => handleDateChange(e, handleInputChange)}
                       required
                     />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label htmlFor="periodTo">Период по *</label>
                     <input
-                      type="text"
+                      type="date"
                       id="periodTo"
                       name="periodTo"
                       placeholder="ДД.ММ.ГГГГ"
-                      value={formData.periodTo}
-                      onChange={handleInputChange}
+                      value={formatDateForInput(formData.periodTo)}
+                      onChange={(e) => handleDateChange(e, handleInputChange)}
                       required
                     />
                   </div>

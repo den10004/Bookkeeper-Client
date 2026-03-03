@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import FileUploader from "./FileUploader";
+import { DOCUMENT_FORMATS, DOCUMENT_TYPES, REQUEST_TYPES } from "../constants";
 
 interface ApplicationCardProps {
   application: Application;
@@ -11,22 +12,6 @@ interface ApplicationCardProps {
   ) => void;
   onApplicationsUpdate?: () => void;
 }
-
-const REQUEST_TYPES = {
-  NEW_CLIENT: "new_client",
-  EXISTING_CLIENT: "existing_client",
-  DOCUMENT_REQUEST: "document_request",
-} as const;
-
-const DOCUMENT_TYPES = {
-  WORK_CERTIFICATE: "work_certificate",
-  RECONCILIATION_ACT: "reconciliation_act",
-} as const;
-
-const DOCUMENT_FORMATS = {
-  PDF: "pdf",
-  EDO: "edo",
-} as const;
 
 export default function ApplicationCard({
   application,
@@ -124,12 +109,11 @@ export default function ApplicationCard({
       [field]: e.target.value,
     }));
   };
-
+  /*
   const handleRequestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target
       .value as (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
 
-    // Сброс полей при смене типа
     if (value === REQUEST_TYPES.DOCUMENT_REQUEST) {
       setEditFormData((prev) => ({
         ...prev,
@@ -151,7 +135,7 @@ export default function ApplicationCard({
       }));
     }
   };
-
+*/
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
@@ -364,7 +348,6 @@ export default function ApplicationCard({
       );
     }
 
-    // Форматирование для отображения
     let formattedValue = displayValue;
 
     if (field === "documentType") {
@@ -588,7 +571,7 @@ export default function ApplicationCard({
                       ? new Intl.NumberFormat("ru-RU", {
                           style: "currency",
                           currency: "RUB",
-                        }).format(application.cost)
+                        }).format(Number(application.cost))
                       : "Не указана"}
                 </span>
               </div>
