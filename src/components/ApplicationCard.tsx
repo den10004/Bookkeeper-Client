@@ -12,6 +12,23 @@ interface ApplicationCardProps {
   onApplicationsUpdate?: () => void;
 }
 
+// Константы для типов
+const REQUEST_TYPES = {
+  NEW_CLIENT: "new_client",
+  EXISTING_CLIENT: "existing_client",
+  DOCUMENT_REQUEST: "document_request",
+} as const;
+
+const DOCUMENT_TYPES = {
+  WORK_CERTIFICATE: "work_certificate",
+  RECONCILIATION_ACT: "reconciliation_act",
+} as const;
+
+const DOCUMENT_FORMATS = {
+  PDF: "pdf",
+  EDO: "edo",
+} as const;
+
 export default function ApplicationCard({
   application,
   onApplicationUpdated,
@@ -23,6 +40,9 @@ export default function ApplicationCard({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { auth } = useAuth();
+
+  const isDocumentRequest =
+    application.requestType === REQUEST_TYPES.DOCUMENT_REQUEST;
 
   const deleteCard = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,18 +82,42 @@ export default function ApplicationCard({
   const startEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
-    setEditFormData({
+
+    // Базовые поля
+    const baseData: Partial<Application> = {
       name: application.name,
       organization: application.organization,
-      quantity: application.quantity,
-      cost: application.cost,
       comment: application.comment,
-    });
+      requestType: application.requestType,
+    };
+
+    // Поля в зависимости от типа
+    if (isDocumentRequest) {
+      setEditFormData({
+        ...baseData,
+        documentType: application.documentType,
+        inn: application.inn,
+        accountNumber: application.accountNumber,
+        periodFrom: application.periodFrom,
+        periodTo: application.periodTo,
+        documentFormat: application.documentFormat,
+        totalAmount: application.totalAmount,
+      });
+    } else {
+      setEditFormData({
+        ...baseData,
+        quantity: application.quantity,
+        cost: application.cost,
+      });
+    }
+
     setEditFiles([]);
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
     field: keyof Application,
   ) => {
     setEditFormData((prev) => ({
@@ -82,11 +126,96 @@ export default function ApplicationCard({
     }));
   };
 
+  const handleRequestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target
+      .value as (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
+
+    // Сброс полей при смене типа
+    if (value === REQUEST_TYPES.DOCUMENT_REQUEST) {
+      setEditFormData((prev) => ({
+        ...prev,
+        requestType: value,
+        quantity: undefined,
+        cost: undefined,
+      }));
+    } else {
+      setEditFormData((prev) => ({
+        ...prev,
+        requestType: value,
+        documentType: undefined,
+        inn: undefined,
+        accountNumber: undefined,
+        periodFrom: undefined,
+        periodTo: undefined,
+        documentFormat: undefined,
+        totalAmount: undefined,
+      }));
+    }
+  };
+
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
     setEditFormData({});
     setEditFiles([]);
+  };
+
+  const validateForm = (): boolean => {
+    const data = editFormData;
+
+    if (!data.name || !data.organization) {
+      alert("Заполните все обязательные поля");
+      return false;
+    }
+
+    if (data.requestType === REQUEST_TYPES.DOCUMENT_REQUEST) {
+      if (!data.documentType) {
+        alert("Выберите тип документа");
+        return false;
+      }
+      if (!data.inn) {
+        alert("Введите ИНН");
+        return false;
+      }
+      if (!data.accountNumber) {
+        alert("Введите номер счета");
+        return false;
+      }
+      if (!data.periodFrom) {
+        alert("Введите дату начала периода");
+        return false;
+      }
+      if (!data.periodTo) {
+        alert("Введите дату окончания периода");
+        return false;
+      }
+      if (!data.documentFormat) {
+        alert("Выберите формат документа");
+        return false;
+      }
+      if (!data.totalAmount) {
+        alert("Введите итоговую сумму");
+        return false;
+      }
+
+      // Валидация ИНН
+      const innRegex = /^\d{10}$|^\d{12}$/;
+      if (data.inn && !innRegex.test(data.inn as string)) {
+        alert("ИНН должен содержать 10 или 12 цифр");
+        return false;
+      }
+    } else {
+      if (!data.quantity) {
+        alert("Укажите количество");
+        return false;
+      }
+      if (!data.cost) {
+        alert("Укажите стоимость");
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const saveChanges = async (e: React.MouseEvent) => {
@@ -103,6 +232,10 @@ export default function ApplicationCard({
       setIsEditing(false);
       setEditFormData({});
       setEditFiles([]);
+      return;
+    }
+
+    if (!validateForm()) {
       return;
     }
 
@@ -176,12 +309,33 @@ export default function ApplicationCard({
   const renderEditableField = (
     field: keyof Application,
     label: string,
-    type: "text" | "number" | "textarea" = "text",
+    type: "text" | "number" | "textarea" | "select" = "text",
+    options?: { value: string; label: string }[],
   ) => {
     const value = isEditing ? editFormData[field] : application[field];
     const displayValue: any = value ?? "Не указано";
 
     if (isEditing) {
+      if (type === "select" && options) {
+        return (
+          <div className="applications">
+            <label>{label}:</label>
+            <select
+              value={(value as string) || ""}
+              onChange={(e) => handleInputChange(e, field)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value="">Выберите {label.toLowerCase()}</option>
+              {options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+      }
+
       if (type === "textarea") {
         return (
           <div className="applications">
@@ -211,13 +365,53 @@ export default function ApplicationCard({
       );
     }
 
+    // Форматирование для отображения
+    let formattedValue = displayValue;
+
+    if (field === "documentType") {
+      const docTypeMap: Record<string, string> = {
+        work_certificate: "Акт выполненных работ",
+        reconciliation_act: "Акт сверки",
+      };
+      formattedValue = docTypeMap[displayValue] || displayValue;
+    } else if (field === "documentFormat") {
+      const formatMap: Record<string, string> = {
+        pdf: "PDF",
+        edo: "ЭДО",
+      };
+      formattedValue = formatMap[displayValue] || displayValue;
+    } else if (field === "totalAmount" || field === "cost") {
+      formattedValue =
+        displayValue !== "Не указано" && displayValue
+          ? new Intl.NumberFormat("ru-RU", {
+              style: "currency",
+              currency: "RUB",
+            }).format(Number(displayValue))
+          : displayValue;
+    } else if (field === "periodFrom" || field === "periodTo") {
+      formattedValue =
+        displayValue !== "Не указано" && displayValue
+          ? new Date(displayValue).toLocaleDateString("ru-RU")
+          : displayValue;
+    } else if (field === "requestType") {
+      const requestTypeMap: Record<string, string> = {
+        new_client: "Новый клиент",
+        existing_client: "Существующий клиент",
+        document_request: "Запрос документа",
+      };
+      formattedValue = requestTypeMap[displayValue] || displayValue;
+    }
+
     return (
       <div className="applications">
         <span>{label}</span>
-        <span>{displayValue}</span>
+        <span>{formattedValue}</span>
       </div>
     );
   };
+
+  // Определяем, какие поля показывать в зависимости от типа заявки
+  const showDocumentFields = isDocumentRequest;
 
   return (
     <div
@@ -226,26 +420,66 @@ export default function ApplicationCard({
         border: isEditing ? "2px solid var(--green)" : "1px solid var(--gray)",
       }}
     >
+      {/* Тип заявки */}
+      {isEditing ? (
+        <div className="div1" style={{ gridColumn: "span 2" }}>
+          <div className="applications">
+            <label>Тип запроса:</label>
+            <select
+              value={
+                (editFormData.requestType as string) || application.requestType
+              }
+              onChange={handleRequestTypeChange}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value={REQUEST_TYPES.NEW_CLIENT}>Новый клиент</option>
+              <option value={REQUEST_TYPES.EXISTING_CLIENT}>
+                Существующий клиент
+              </option>
+              <option value={REQUEST_TYPES.DOCUMENT_REQUEST}>
+                Запрос документа
+              </option>
+            </select>
+          </div>
+        </div>
+      ) : (
+        <div className="div1" style={{ gridColumn: "span 2" }}>
+          <div className="applications">
+            <span>Тип запроса:</span>
+            <span className={`badge badge-${application.requestType}`}>
+              {renderEditableField("requestType", "Тип запроса")}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="div1">
-        {renderEditableField("name", "Название", "text")}
+        {renderEditableField(
+          "name",
+          showDocumentFields ? "Название документа" : "Название франшизы",
+          "text",
+        )}
       </div>
+
       <div className="div2">
         <div className="applications">
-          <span>Создано:</span>
+          <span>Создатель:</span>
           <span>{application.Creator?.username || "Не указано"}</span>
         </div>
       </div>
+
       <div className="div3">
         <div className="applications">
-          <span>Назначено:</span>
+          <span>Бухгалтер:</span>
           <span>
             {application.AssignedAccountant?.username || "Не назначено"}
           </span>
         </div>
       </div>
+
       <div className="div4">
         <div className="applications">
-          <span> Создано:</span>
+          <span>Дата создания:</span>
           <span>
             {application.createdAt
               ? new Date(application.createdAt).toLocaleDateString()
@@ -253,18 +487,71 @@ export default function ApplicationCard({
           </span>
         </div>
       </div>
+
       <div className="div5">
         {renderEditableField("organization", "Организация")}
       </div>
-      <div className="div6">
-        {renderEditableField("quantity", "Количество", "number")}
-      </div>
-      <div className="div7">
-        {renderEditableField("cost", "Стоимость", "text")}
-      </div>
-      <div className="div8">
+
+      {/* Поля в зависимости от типа заявки */}
+      {showDocumentFields ? (
+        // Поля для document_request
+        <>
+          <div className="div6">
+            {renderEditableField("documentType", "Тип документа", "select", [
+              {
+                value: DOCUMENT_TYPES.WORK_CERTIFICATE,
+                label: "Акт выполненных работ",
+              },
+              { value: DOCUMENT_TYPES.RECONCILIATION_ACT, label: "Акт сверки" },
+            ])}
+          </div>
+
+          <div className="div7">
+            {renderEditableField("inn", "ИНН", "text")}
+          </div>
+
+          <div className="div8">
+            {renderEditableField("accountNumber", "Номер счета", "text")}
+          </div>
+
+          <div className="div6">
+            {renderEditableField("periodFrom", "Период с", "text")}
+          </div>
+
+          <div className="div7">
+            {renderEditableField("periodTo", "Период по", "text")}
+          </div>
+
+          <div className="div8">
+            {renderEditableField("documentFormat", "Формат", "select", [
+              { value: DOCUMENT_FORMATS.PDF, label: "PDF" },
+              { value: DOCUMENT_FORMATS.EDO, label: "ЭДО" },
+            ])}
+          </div>
+
+          <div className="div6">
+            {renderEditableField("totalAmount", "Итоговая сумма", "number")}
+          </div>
+        </>
+      ) : (
+        // Поля для обычных заявок
+        <>
+          <div className="div6">
+            {renderEditableField("quantity", "Количество", "number")}
+          </div>
+
+          <div className="div7">
+            {renderEditableField("cost", "Стоимость", "number")}
+          </div>
+        </>
+      )}
+
+      {/* Комментарий - занимает больше места */}
+      <div className="div8" style={{ gridColumn: "span 2" }}>
         {renderEditableField("comment", "Комментарии", "textarea")}
       </div>
+
+      {/* Кнопки редактирования */}
       <div className="application__edit">
         {isEditing ? (
           <>
@@ -308,7 +595,9 @@ export default function ApplicationCard({
             {isDeleting ? "Удаление..." : "Удалить"}
           </button>
         )}
-      </div>{" "}
+      </div>
+
+      {/* Файлы */}
       <div className="div10">
         <div className="applications">
           <span>{isEditing ? "Текущие файлы:" : "Файлы:"}</span>

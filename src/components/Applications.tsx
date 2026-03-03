@@ -100,7 +100,6 @@ export default function Applications({
         (currentUserRole === "DIRECTOR" ||
           newApp.assignedAccountantId === currentUserId);
 
-      // Не показываем уведомление создателю заявки
       if (shouldNotify && newApp.userId !== currentUserId) {
         setToast({
           message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
@@ -131,7 +130,6 @@ export default function Applications({
         currentUserId &&
         (currentUserRole === "DIRECTOR" ||
           updatedApp.assignedAccountantId === currentUserId ||
-          // Создатель заявки (менеджер) получает уведомление
           updatedApp.userId === currentUserId);
       if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
         const appName = updatedApp.name || "Без названия";

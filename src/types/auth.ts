@@ -44,6 +44,7 @@ export interface DownloadLink {
 
 export interface Application {
   assignedAccountantId: number;
+  requestType: "new_client" | "existing_client" | "document_request";
   updatedBy: number;
   Updater: any;
   userId: number;
@@ -55,6 +56,13 @@ export interface Application {
   AssignedAccountant?: {
     username?: string;
   };
+  documentType?: "work_certificate" | "reconciliation_act" | null;
+  inn?: string | null;
+  accountNumber?: string | null;
+  periodFrom?: string | null;
+  periodTo?: string | null;
+  documentFormat?: "pdf" | "edo" | null;
+  totalAmount?: number | null;
   createdAt?: string;
   organization?: string;
   quantity?: string;

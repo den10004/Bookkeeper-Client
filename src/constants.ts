@@ -2,6 +2,7 @@ export const roles = {
   accountant: "бухгалтер",
   director: "директор",
   manager: "менеджер",
+  rop: "роп",
 } as const;
 
 export const errorDictionary: Record<string, string> = {

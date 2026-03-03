@@ -9,6 +9,23 @@ interface AddApplicationProps {
   onApplicationsUpdate?: () => void;
 }
 
+// Константы для типов
+const REQUEST_TYPES = {
+  NEW_CLIENT: "new_client",
+  EXISTING_CLIENT: "existing_client",
+  DOCUMENT_REQUEST: "document_request",
+} as const;
+
+const DOCUMENT_TYPES = {
+  WORK_CERTIFICATE: "work_certificate",
+  RECONCILIATION_ACT: "reconciliation_act",
+} as const;
+
+const DOCUMENT_FORMATS = {
+  PDF: "pdf",
+  EDO: "edo",
+} as const;
+
 export default function AddApplication({
   onApplicationAdded,
   onApplicationsUpdate,
@@ -18,6 +35,8 @@ export default function AddApplication({
   const [accountants, setAccountants] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingAccountants, setLoadingAccountants] = useState(false);
+  const [requestType, setRequestType] =
+    useState<keyof typeof REQUEST_TYPES>("NEW_CLIENT");
   const [formData, setFormData] = useState({
     name: "",
     organization: "",
@@ -25,6 +44,14 @@ export default function AddApplication({
     cost: "",
     quantity: "",
     comment: "",
+    // Поля для document_request
+    documentType: "",
+    inn: "",
+    accountNumber: "",
+    periodFrom: "",
+    periodTo: "",
+    documentFormat: "",
+    totalAmount: "",
   });
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +80,41 @@ export default function AddApplication({
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleRequestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as keyof typeof REQUEST_TYPES;
+    setRequestType(value);
+
+    // Сброс полей при смене типа
+    if (value === "DOCUMENT_REQUEST") {
+      setFormData((prev) => ({
+        ...prev,
+        cost: "",
+        quantity: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        documentType: "",
+        inn: "",
+        accountNumber: "",
+        periodFrom: "",
+        periodTo: "",
+        documentFormat: "",
+        totalAmount: "",
+      }));
+    }
+  };
+
   const resetForm = () => {
+    setRequestType("NEW_CLIENT");
     setFormData({
       name: "",
       organization: "",
@@ -67,6 +122,13 @@ export default function AddApplication({
       cost: "",
       quantity: "",
       comment: "",
+      documentType: "",
+      inn: "",
+      accountNumber: "",
+      periodFrom: "",
+      periodTo: "",
+      documentFormat: "",
+      totalAmount: "",
     });
     setFiles([]);
     setError(null);
@@ -77,6 +139,77 @@ export default function AddApplication({
     resetForm();
   };
 
+  const validateForm = (): boolean => {
+    if (
+      !formData.name ||
+      !formData.organization ||
+      !formData.assignedAccountantId
+    ) {
+      setError("Заполните все обязательные поля");
+      return false;
+    }
+
+    if (requestType === "DOCUMENT_REQUEST") {
+      if (!formData.documentType) {
+        setError("Выберите тип документа");
+        return false;
+      }
+      if (!formData.inn) {
+        setError("Введите ИНН");
+        return false;
+      }
+      if (!formData.accountNumber) {
+        setError("Введите номер счета");
+        return false;
+      }
+      if (!formData.periodFrom) {
+        setError("Введите дату начала периода");
+        return false;
+      }
+      if (!formData.periodTo) {
+        setError("Введите дату окончания периода");
+        return false;
+      }
+      if (!formData.documentFormat) {
+        setError("Выберите формат документа");
+        return false;
+      }
+      if (!formData.totalAmount) {
+        setError("Введите итоговую сумму");
+        return false;
+      }
+
+      // Валидация ИНН (10 или 12 цифр)
+      const innRegex = /^\d{10}$|^\d{12}$/;
+      if (!innRegex.test(formData.inn)) {
+        setError("ИНН должен содержать 10 или 12 цифр");
+        return false;
+      }
+
+      // Валидация дат
+      const dateRegex = /^\d{2}\.\d{2}\.\d{4}$/;
+      if (!dateRegex.test(formData.periodFrom)) {
+        setError("Дата начала должна быть в формате ДД.ММ.ГГГГ");
+        return false;
+      }
+      if (!dateRegex.test(formData.periodTo)) {
+        setError("Дата окончания должна быть в формате ДД.ММ.ГГГГ");
+        return false;
+      }
+    } else {
+      if (!formData.cost) {
+        setError("Укажите стоимость");
+        return false;
+      }
+      if (!formData.quantity) {
+        setError("Укажите количество");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -85,12 +218,7 @@ export default function AddApplication({
       return;
     }
 
-    if (
-      !formData.name ||
-      !formData.organization ||
-      !formData.assignedAccountantId
-    ) {
-      setError("Заполните все обязательные поля");
+    if (!validateForm()) {
       return;
     }
 
@@ -100,17 +228,35 @@ export default function AddApplication({
     try {
       const formDataToSend = new FormData();
 
+      // Общие поля
+      formDataToSend.append("requestType", REQUEST_TYPES[requestType]);
       formDataToSend.append("name", formData.name);
       formDataToSend.append("organization", formData.organization);
       formDataToSend.append(
         "assignedAccountantId",
         formData.assignedAccountantId,
       );
-      if (formData.cost) formDataToSend.append("cost", formData.cost);
-      if (formData.quantity)
-        formDataToSend.append("quantity", formData.quantity);
-      if (formData.comment) formDataToSend.append("comment", formData.comment);
 
+      if (formData.comment) {
+        formDataToSend.append("comment", formData.comment);
+      }
+
+      if (requestType === "DOCUMENT_REQUEST") {
+        // Поля для document_request
+        formDataToSend.append("documentType", formData.documentType);
+        formDataToSend.append("inn", formData.inn);
+        formDataToSend.append("accountNumber", formData.accountNumber);
+        formDataToSend.append("periodFrom", formData.periodFrom);
+        formDataToSend.append("periodTo", formData.periodTo);
+        formDataToSend.append("documentFormat", formData.documentFormat);
+        formDataToSend.append("totalAmount", formData.totalAmount);
+      } else {
+        // Поля для обычных заявок
+        formDataToSend.append("cost", formData.cost);
+        formDataToSend.append("quantity", formData.quantity);
+      }
+
+      // Файлы
       files.forEach((file) => {
         formDataToSend.append("files", file);
       });
@@ -141,20 +287,42 @@ export default function AddApplication({
     }
   };
 
+  const isDocumentRequest = requestType === "DOCUMENT_REQUEST";
+
   return (
     <div className="addApplication">
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{ background: "var(--blue)" }}
       >
-        <span>Добавить заявку</span>
+        <span>Создать запрос</span>
       </button>
 
       {isOpen && (
         <div className="addApplication__open">
           <form onSubmit={handleSubmit}>
+            {/* Тип запроса */}
             <div>
-              <label htmlFor="name">Название заявки *</label>
+              <label htmlFor="requestType">Тип запроса *</label>
+              <select
+                id="requestType"
+                name="requestType"
+                value={requestType}
+                onChange={handleRequestTypeChange}
+                required
+              >
+                <option value="NEW_CLIENT">Новый клиент</option>
+                <option value="EXISTING_CLIENT">Существующий клиент</option>
+                <option value="DOCUMENT_REQUEST">Запрос документа</option>
+              </select>
+            </div>
+
+            {/* Название */}
+            <div>
+              <label htmlFor="name">
+                {isDocumentRequest ? "Название документа" : "Название франшизы"}{" "}
+                *
+              </label>
               <input
                 type="text"
                 id="name"
@@ -166,6 +334,7 @@ export default function AddApplication({
               />
             </div>
 
+            {/* Организация */}
             <div>
               <label htmlFor="organization">Организация *</label>
               <input
@@ -179,43 +348,158 @@ export default function AddApplication({
               />
             </div>
 
-            <div>
-              <label htmlFor="cost">Стоимость лида</label>
-              <input
-                type="number"
-                id="cost"
-                name="cost"
-                min="0"
-                step="any"
-                value={formData.cost}
-                onChange={handleInputChange}
-              />
-            </div>
+            {/* Поля для обычных заявок */}
+            {!isDocumentRequest && (
+              <>
+                <div>
+                  <label htmlFor="cost">Стоимость лида *</label>
+                  <input
+                    type="number"
+                    id="cost"
+                    name="cost"
+                    min="0"
+                    step="any"
+                    value={formData.cost}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
 
-            <div>
-              <label htmlFor="quantity">Количество лидов</label>
-              <input
-                type="number"
-                id="quantity"
-                name="quantity"
-                min="0"
-                step="any"
-                value={formData.quantity}
-                onChange={handleInputChange}
-              />
-            </div>
+                <div>
+                  <label htmlFor="quantity">Количество лидов *</label>
+                  <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    min="0"
+                    step="any"
+                    value={formData.quantity}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </>
+            )}
 
+            {/* Поля для document_request */}
+            {isDocumentRequest && (
+              <>
+                <div>
+                  <label htmlFor="documentType">Тип документа *</label>
+                  <select
+                    id="documentType"
+                    name="documentType"
+                    value={formData.documentType}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Выберите тип документа</option>
+                    <option value={DOCUMENT_TYPES.WORK_CERTIFICATE}>
+                      Акт выполненных работ
+                    </option>
+                    <option value={DOCUMENT_TYPES.RECONCILIATION_ACT}>
+                      Акт сверки
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="inn">ИНН *</label>
+                  <input
+                    type="text"
+                    id="inn"
+                    name="inn"
+                    placeholder="10 или 12 цифр"
+                    maxLength={12}
+                    value={formData.inn}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="accountNumber">Номер счета *</label>
+                  <input
+                    type="text"
+                    id="accountNumber"
+                    name="accountNumber"
+                    value={formData.accountNumber}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label htmlFor="periodFrom">Период с *</label>
+                    <input
+                      type="text"
+                      id="periodFrom"
+                      name="periodFrom"
+                      placeholder="ДД.ММ.ГГГГ"
+                      value={formData.periodFrom}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label htmlFor="periodTo">Период по *</label>
+                    <input
+                      type="text"
+                      id="periodTo"
+                      name="periodTo"
+                      placeholder="ДД.ММ.ГГГГ"
+                      value={formData.periodTo}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="documentFormat">Формат документа *</label>
+                  <select
+                    id="documentFormat"
+                    name="documentFormat"
+                    value={formData.documentFormat}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Выберите формат</option>
+                    <option value={DOCUMENT_FORMATS.PDF}>PDF</option>
+                    <option value={DOCUMENT_FORMATS.EDO}>ЭДО</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="totalAmount">Итоговая сумма *</label>
+                  <input
+                    type="number"
+                    id="totalAmount"
+                    name="totalAmount"
+                    min="0"
+                    step="0.01"
+                    value={formData.totalAmount}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Комментарий */}
             <div>
               <label htmlFor="comment">Комментарии</label>
-              <input
-                type="text"
+              <textarea
                 id="comment"
                 name="comment"
+                rows={3}
                 value={formData.comment}
                 onChange={handleInputChange}
               />
             </div>
 
+            {/* Бухгалтер */}
             <div>
               <label htmlFor="assignedAccountantId">Бухгалтер *</label>
               <select
@@ -237,6 +521,7 @@ export default function AddApplication({
               </select>
             </div>
 
+            {/* Файлы */}
             <FileUploader
               onFilesChange={setFiles}
               disabled={loading}
