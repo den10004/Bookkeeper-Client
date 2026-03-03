@@ -6,7 +6,7 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
-    role: "manager",
+    role: roles.manager,
     password: "",
     confirmPassword: "",
   });
@@ -44,7 +44,7 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
       setNewUser({
         username: "",
         email: "",
-        role: "manager",
+        role: roles.manager,
         password: "",
         confirmPassword: "",
       });

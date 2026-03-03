@@ -7,6 +7,7 @@ import Applications from "../components/Applications";
 import AddApplication from "../components/AddApplication";
 import Account from "../components/Account";
 import Users from "../components/Users";
+import { roles } from "../constants";
 
 export default function Profile() {
   const { auth } = useAuth();
@@ -73,8 +74,8 @@ export default function Profile() {
   return (
     <div className="wrapper">
       <Account />
-      {auth.user?.role === "director" && <Users />}
-      {auth.user?.role === "manager" && (
+      {auth.user?.role === roles.accountant || (roles.rop && <Users />)}
+      {auth.user?.role === roles.manager && (
         <AddApplication
           onApplicationAdded={addApplicationOptimistic}
           onApplicationsUpdate={refreshApplications}

@@ -4,6 +4,7 @@ import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
 import Toast from "./Toast";
+import { roles } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -97,7 +98,7 @@ export default function Applications({
 
       const shouldNotify =
         currentUserId &&
-        (currentUserRole === "DIRECTOR" ||
+        (currentUserRole === roles.director ||
           newApp.assignedAccountantId === currentUserId);
 
       if (shouldNotify && newApp.userId !== currentUserId) {
@@ -128,7 +129,7 @@ export default function Applications({
 
       const shouldNotify =
         currentUserId &&
-        (currentUserRole === "DIRECTOR" ||
+        (currentUserRole === roles.director ||
           updatedApp.assignedAccountantId === currentUserId ||
           updatedApp.userId === currentUserId);
       if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
@@ -163,7 +164,7 @@ export default function Applications({
         const currentUserRole = auth?.user?.role;
 
         const shouldNotify =
-          currentUserId && (currentUserRole === "DIRECTOR" || true);
+          currentUserId && (currentUserRole === roles.director || true);
 
         if (shouldNotify && payload.deletedBy !== currentUserId) {
           if (Notification.permission === "granted") {

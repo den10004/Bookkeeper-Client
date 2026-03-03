@@ -3,7 +3,12 @@ import { api } from "../services/api";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import FileUploader from "./FileUploader";
-import { DOCUMENT_FORMATS, DOCUMENT_TYPES, REQUEST_TYPES } from "../constants";
+import {
+  DOCUMENT_FORMATS,
+  DOCUMENT_TYPES,
+  REQUEST_TYPES,
+  roles,
+} from "../constants";
 
 interface ApplicationCardProps {
   application: Application;
@@ -618,17 +623,20 @@ export default function ApplicationCard({
               >
                 Редактировать
               </button>
-              {auth.user && auth.user.role === "director" && (
-                <button
-                  onClick={deleteCard}
-                  disabled={isDeleting}
-                  style={{
-                    backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
-                  }}
-                >
-                  {isDeleting ? "Удаление..." : "Удалить"}
-                </button>
-              )}
+              {(auth.user && auth.user.role === roles.director) ||
+                (roles.rop && (
+                  <button
+                    onClick={deleteCard}
+                    disabled={isDeleting}
+                    style={{
+                      backgroundColor: isDeleting
+                        ? "var(--gray)"
+                        : "var(--red)",
+                    }}
+                  >
+                    {isDeleting ? "Удаление..." : "Удалить"}
+                  </button>
+                ))}
             </div>
           )}
         </div>
