@@ -39,12 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (res.status === 401) {
-        console.log("Refresh token expired or invalid");
+        console.error("Refresh token expired or invalid");
         return null;
       }
 
       if (!res.ok) {
-        console.log("Refresh failed with status:", res.status);
+        console.error("Refresh failed with status:", res.status);
         return null;
       }
 
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (!response.ok) {
-          console.log("Failed to fetch user data:", response.status);
+          console.error("Failed to fetch user data:", response.status);
           return null;
         }
 
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const newToken = await refreshToken();
 
         if (!newToken) {
-          console.log("No token received from refresh");
+          console.error("No token received from refresh");
           setAuth({
             user: null,
             accessToken: null,
@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await fetchUserData(newToken);
 
         if (!userData) {
-          console.log("No user data received");
+          console.error("No user data received");
           setAuth({
             user: null,
             accessToken: null,

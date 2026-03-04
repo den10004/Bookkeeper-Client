@@ -118,8 +118,6 @@ export default function Applications({
     });
 
     socket.on("application:updated", (updatedApp: Application) => {
-      console.log("Обновлена заявка:", updatedApp.id);
-
       setApplications((prev) =>
         prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)),
       );
