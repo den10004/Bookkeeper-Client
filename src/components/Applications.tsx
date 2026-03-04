@@ -4,7 +4,7 @@ import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
 import Toast from "./Toast";
-import { roles } from "../constants";
+import { MANAGER, roles } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -103,13 +103,13 @@ export default function Applications({
 
       if (shouldNotify && newApp.userId !== currentUserId) {
         setToast({
-          message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
+          message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
           type: "success",
         });
 
         if (Notification.permission === "granted") {
           new Notification("Новая заявка!", {
-            body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || "менеджер"}`,
+            body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
             icon: "/favicon.ico",
             tag: `new-app-${newApp.id}`,
           });
@@ -134,7 +134,7 @@ export default function Applications({
           updatedApp.userId === currentUserId);
       if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
         const appName = updatedApp.name || "Без названия";
-        const updaterName = updatedApp.Updater?.username || "менеджер";
+        const updaterName = updatedApp.Updater?.username || MANAGER;
 
         setToast({
           message: `Заявка обновлена: ${appName} (изменения от ${updaterName})`,
@@ -232,13 +232,15 @@ export default function Applications({
               }
 
               return (
-                <LazyApplicationCard
-                  key={application.id}
-                  application={application}
-                  onApplicationUpdated={onApplicationUpdated}
-                  onApplicationsUpdate={onApplicationsUpdate}
-                  preload={preload}
-                />
+                <>
+                  <LazyApplicationCard
+                    key={application.id}
+                    application={application}
+                    onApplicationUpdated={onApplicationUpdated}
+                    onApplicationsUpdate={onApplicationsUpdate}
+                    preload={preload}
+                  />
+                </>
               );
             })}
           </div>

@@ -32,3 +32,8 @@ export const DOCUMENT_FORMATS = {
   PDF: "pdf",
   EDO: "edo",
 } as const;
+
+export const DIRECTOR = "director";
+export const ACCOUNTANT = "accountant";
+export const MANAGER = "manager";
+export const ROP = "rop";

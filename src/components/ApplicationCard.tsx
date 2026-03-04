@@ -1,13 +1,14 @@
-import type { Application, DownloadLink, FileData } from "../types/auth";
+import type { Application, DownloadLink, FileData, User } from "../types/auth";
 import { api } from "../services/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import FileUploader from "./FileUploader";
 import {
+  DIRECTOR,
+  ROP,
   DOCUMENT_FORMATS,
   DOCUMENT_TYPES,
   REQUEST_TYPES,
-  roles,
 } from "../constants";
 
 interface ApplicationCardProps {
@@ -28,10 +29,32 @@ export default function ApplicationCard({
   const [editFiles, setEditFiles] = useState<File[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [accountants, setAccountants] = useState<User[]>([]);
+  const [loadingAccountants, setLoadingAccountants] = useState(false);
   const { auth } = useAuth();
 
   const isDocumentRequest =
     application.requestType === REQUEST_TYPES.DOCUMENT_REQUEST;
+
+  useEffect(() => {
+    if (isEditing && accountants.length === 0 && auth.accessToken) {
+      fetchAccountants();
+    }
+  }, [isEditing, auth.accessToken]);
+
+  const fetchAccountants = async () => {
+    if (!auth.accessToken) return;
+
+    setLoadingAccountants(true);
+    try {
+      const data = await api.getUsersByRole("accountant", auth.accessToken);
+      setAccountants(data);
+    } catch (err) {
+      console.error("Ошибка загрузки бухгалтеров:", err);
+    } finally {
+      setLoadingAccountants(false);
+    }
+  };
 
   const deleteCard = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,15 +95,14 @@ export default function ApplicationCard({
     e.stopPropagation();
     setIsEditing(true);
 
-    // Базовые поля
     const baseData: Partial<Application> = {
       name: application.name,
       organization: application.organization,
       comment: application.comment,
       requestType: application.requestType,
+      assignedAccountantId: application.assignedAccountantId,
     };
 
-    // Поля в зависимости от типа
     if (isDocumentRequest) {
       setEditFormData({
         ...baseData,
@@ -109,38 +131,18 @@ export default function ApplicationCard({
     >,
     field: keyof Application,
   ) => {
+    let value: string | number = e.target.value;
+
+    if (field === "cost" || field === "quantity" || field === "totalAmount") {
+      value = value === "" ? "" : Number(value);
+    }
+
     setEditFormData((prev) => ({
       ...prev,
-      [field]: e.target.value,
+      [field]: value,
     }));
   };
-  /*
-  const handleRequestTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target
-      .value as (typeof REQUEST_TYPES)[keyof typeof REQUEST_TYPES];
 
-    if (value === REQUEST_TYPES.DOCUMENT_REQUEST) {
-      setEditFormData((prev) => ({
-        ...prev,
-        requestType: value,
-        quantity: undefined,
-        cost: undefined,
-      }));
-    } else {
-      setEditFormData((prev) => ({
-        ...prev,
-        requestType: value,
-        documentType: undefined,
-        inn: undefined,
-        accountNumber: undefined,
-        periodFrom: undefined,
-        periodTo: undefined,
-        documentFormat: undefined,
-        totalAmount: undefined,
-      }));
-    }
-  };
-*/
   const cancelEditing = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
@@ -148,11 +150,23 @@ export default function ApplicationCard({
     setEditFiles([]);
   };
 
+  const formatDateForApi = (dateString: string) => {
+    if (!dateString) return "";
+    if (dateString.includes("-")) return dateString;
+    const [day, month, year] = dateString.split(".");
+    return `${year}-${month}-${day}`;
+  };
+
   const validateForm = (): boolean => {
     const data = editFormData;
 
     if (!data.name || !data.organization) {
       alert("Заполните все обязательные поля");
+      return false;
+    }
+
+    if (!data.assignedAccountantId) {
+      alert("Выберите бухгалтера");
       return false;
     }
 
@@ -186,7 +200,6 @@ export default function ApplicationCard({
         return false;
       }
 
-      // Валидация ИНН
       const innRegex = /^\d{10}$|^\d{12}$/;
       if (data.inn && !innRegex.test(data.inn as string)) {
         alert("ИНН должен содержать 10 или 12 цифр");
@@ -230,10 +243,34 @@ export default function ApplicationCard({
     setIsUpdating(true);
 
     try {
+      let updateData: any = { ...editFormData };
+
+      if (updateData.periodFrom) {
+        updateData.periodFrom = formatDateForApi(
+          updateData.periodFrom as string,
+        );
+      }
+      if (updateData.periodTo) {
+        updateData.periodTo = formatDateForApi(updateData.periodTo as string);
+      }
+
+      if (
+        !updateData.assignedAccountantId &&
+        application.assignedAccountantId
+      ) {
+        updateData.assignedAccountantId = application.assignedAccountantId;
+      }
+
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === undefined || updateData[key] === null) {
+          delete updateData[key];
+        }
+      });
+
       if (hasFiles) {
         const formData = new FormData();
 
-        Object.entries(editFormData).forEach(([key, value]) => {
+        Object.entries(updateData).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
             formData.append(key, String(value));
           }
@@ -248,7 +285,7 @@ export default function ApplicationCard({
         await api.updateApplication(
           auth.accessToken,
           application.id,
-          editFormData,
+          updateData,
         );
       }
 
@@ -264,6 +301,7 @@ export default function ApplicationCard({
       setEditFormData({});
       setEditFiles([]);
     } catch (error) {
+      console.error("Ошибка при обновлении заявки:", error);
       alert("Ошибка при обновлении заявки. Пожалуйста, попробуйте снова.");
 
       if (onApplicationsUpdate) {
@@ -306,47 +344,42 @@ export default function ApplicationCard({
     if (isEditing) {
       if (type === "select" && options) {
         return (
-          <div className="applications">
-            <select
-              value={(value as string) || ""}
-              onChange={(e) => handleInputChange(e, field)}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <option value="">Выберите {label.toLowerCase()}</option>
-              {options.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={(value as string) || ""}
+            onChange={(e) => handleInputChange(e, field)}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <option value="">Выберите {label.toLowerCase()}</option>
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         );
       }
 
       if (type === "textarea") {
         return (
-          <div className="applications">
-            <textarea
-              value={(value as string) || ""}
-              onChange={(e) => handleInputChange(e, field)}
-              onClick={(e) => e.stopPropagation()}
-              rows={3}
-              placeholder={`Введите ${label.toLowerCase()}`}
-            />
-          </div>
+          <textarea
+            value={(value as string) || ""}
+            onChange={(e) => handleInputChange(e, field)}
+            onClick={(e) => e.stopPropagation()}
+            rows={3}
+            placeholder={`Введите ${label.toLowerCase()}`}
+          />
         );
       }
 
       return (
-        <div className="applications">
-          <input
-            type={type}
-            value={(value as string | number) ?? ""}
-            onChange={(e) => handleInputChange(e, field)}
-            onClick={(e) => e.stopPropagation()}
-            placeholder={`Введите ${label.toLowerCase()}`}
-          />
-        </div>
+        <input
+          type={type}
+          value={(value as string | number) ?? ""}
+          onChange={(e) => handleInputChange(e, field)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder={`Введите ${label.toLowerCase()}`}
+          step={type === "number" ? "0.01" : undefined}
+        />
       );
     }
 
@@ -384,14 +417,12 @@ export default function ApplicationCard({
         document_request: "Запрос документа",
       };
       formattedValue = requestTypeMap[displayValue] || displayValue;
+    } else if (field === "assignedAccountantId") {
+      const accountant = application.AssignedAccountant;
+      formattedValue = accountant?.username || "Не назначено";
     }
 
-    return (
-      <div className="applications">
-        <span>{label}</span>
-        <span>{formattedValue}</span>
-      </div>
-    );
+    return <span>{formattedValue}</span>;
   };
 
   const showDocumentFields = isDocumentRequest;
@@ -419,7 +450,29 @@ export default function ApplicationCard({
           <div className="applications__info-item">
             <span className="applications__info-label">Бухгалтер:</span>
             <span className="applications__field-value">
-              {application.AssignedAccountant?.username || "Не назначено"}
+              {isEditing ? (
+                <select
+                  value={
+                    editFormData.assignedAccountantId ||
+                    application.assignedAccountantId ||
+                    ""
+                  }
+                  onChange={(e) => handleInputChange(e, "assignedAccountantId")}
+                  onClick={(e) => e.stopPropagation()}
+                  disabled={loadingAccountants}
+                >
+                  <option value="">
+                    {loadingAccountants ? "Загрузка..." : "Выберите бухгалтера"}
+                  </option>
+                  {accountants.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.username}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                application.AssignedAccountant?.username || "Не назначено"
+              )}
             </span>
           </div>
           <div className="applications__info-item">
@@ -501,15 +554,16 @@ export default function ApplicationCard({
                 <span className="applications__field-value">
                   {isEditing ? (
                     <>
-                      {renderEditableField("periodFrom", "")}-{" "}
+                      {renderEditableField("periodFrom", "")}
+                      <span style={{ margin: "0 5px" }}>-</span>
                       {renderEditableField("periodTo", "")}
                     </>
                   ) : (
                     <>
                       {application.periodFrom
                         ? new Date(application.periodFrom).toLocaleDateString()
-                        : ""}{" "}
-                      -{" "}
+                        : ""}
+                      {" - "}
                       {application.periodTo
                         ? new Date(application.periodTo).toLocaleDateString()
                         : ""}
@@ -623,20 +677,18 @@ export default function ApplicationCard({
               >
                 Редактировать
               </button>
-              {(auth.user && auth.user.role === roles.director) ||
-                (roles.rop && (
-                  <button
-                    onClick={deleteCard}
-                    disabled={isDeleting}
-                    style={{
-                      backgroundColor: isDeleting
-                        ? "var(--gray)"
-                        : "var(--red)",
-                    }}
-                  >
-                    {isDeleting ? "Удаление..." : "Удалить"}
-                  </button>
-                ))}
+
+              {auth.user?.role === DIRECTOR || auth.user?.role === ROP ? (
+                <button
+                  onClick={deleteCard}
+                  disabled={isDeleting}
+                  style={{
+                    backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
+                  }}
+                >
+                  {isDeleting ? "Удаление..." : "Удалить"}
+                </button>
+              ) : null}
             </div>
           )}
         </div>
