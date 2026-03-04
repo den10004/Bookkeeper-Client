@@ -11,7 +11,6 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
     confirmPassword: "",
   });
 
-  console.log(newUser);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

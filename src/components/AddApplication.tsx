@@ -353,7 +353,7 @@ export default function AddApplication({
                     type="number"
                     id="cost"
                     name="cost"
-                    min="0"
+                    min="1"
                     step="any"
                     value={formData.cost}
                     onChange={handleInputChange}
@@ -367,7 +367,7 @@ export default function AddApplication({
                     type="number"
                     id="quantity"
                     name="quantity"
-                    min="0"
+                    min="1"
                     step="any"
                     value={formData.quantity}
                     onChange={handleInputChange}
@@ -471,8 +471,8 @@ export default function AddApplication({
                     type="number"
                     id="totalAmount"
                     name="totalAmount"
-                    min="0"
-                    step="0.01"
+                    min="1"
+                    step="any"
                     value={formData.totalAmount}
                     onChange={handleInputChange}
                     required

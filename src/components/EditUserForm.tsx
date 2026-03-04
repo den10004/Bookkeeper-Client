@@ -108,6 +108,9 @@ export default function EditUserForm({
               required
               disabled={isSubmitting}
             >
+              <option value="" disabled>
+                Выберите роль
+              </option>
               {Object.entries(roles).map(([key, value]) => (
                 <option key={key} value={key}>
                   {value}

@@ -149,8 +149,6 @@ export default function Users() {
         <div className="users__block">
           {loadingAccountants && <p>Загрузка...</p>}
 
-          {error && <p className="error">{error}</p>}
-
           <div className="users__list">
             <div className="users__header">
               <h3>Список пользователей</h3>
