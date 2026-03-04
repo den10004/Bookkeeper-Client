@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import type { User } from "../types/auth";
 import { api } from "../services/api";
-import { errorDictionary, roles } from "../constants";
+import { DIRECTOR, errorDictionary, roles, ROP } from "../constants";
 import CreateUserForm from "./CreateUser";
 import EditUserForm from "./EditUserForm";
 
@@ -152,7 +152,11 @@ export default function Users() {
           <div className="users__list">
             <div className="users__header">
               <h3>Список пользователей</h3>
-              <button onClick={handleCreateClick}>Создать пользователя</button>
+              {auth.user?.role === DIRECTOR || auth.user?.role === ROP ? (
+                <button onClick={handleCreateClick}>
+                  Создать пользователя
+                </button>
+              ) : null}
             </div>
 
             {isCreating && (
@@ -173,7 +177,9 @@ export default function Users() {
                 <strong>Должность</strong>
               </li>
               <li>
-                <strong>Действия</strong>
+                {auth.user?.role === DIRECTOR || auth.user?.role === ROP ? (
+                  <strong>Действия</strong>
+                ) : null}
               </li>
             </ul>
 
@@ -194,18 +200,25 @@ export default function Users() {
                     <li className="actions">
                       {auth.user?.id != accountant.id && (
                         <>
-                          <button
-                            onClick={() => handleEdit(accountant)}
-                            style={{ background: "var(--green)" }}
-                          >
-                            Редактировать
-                          </button>
-                          <button
-                            onClick={() => handleDelete(String(accountant.id))}
-                            style={{ background: "var(--red)" }}
-                          >
-                            Удалить
-                          </button>{" "}
+                          {(auth.user?.role === DIRECTOR ||
+                            auth.user?.role === ROP) && (
+                            <>
+                              <button
+                                onClick={() => handleEdit(accountant)}
+                                style={{ background: "var(--green)" }}
+                              >
+                                Редактировать
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleDelete(String(accountant.id))
+                                }
+                                style={{ background: "var(--red)" }}
+                              >
+                                Удалить
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </li>

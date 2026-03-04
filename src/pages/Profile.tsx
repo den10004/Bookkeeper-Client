@@ -74,9 +74,8 @@ export default function Profile() {
   return (
     <div className="wrapper">
       <Account />
-      {auth.user?.role === DIRECTOR || auth.user?.role === ROP ? (
-        <Users />
-      ) : null}
+      <Users />
+
       {auth.user?.role === MANAGER && (
         <AddApplication
           onApplicationAdded={addApplicationOptimistic}
