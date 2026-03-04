@@ -76,7 +76,7 @@ export default function Profile() {
       <Account />
       <Users />
 
-      {auth.user?.role === MANAGER && (
+      {(auth.user?.role === MANAGER || auth.user?.role === ROP) && (
         <AddApplication
           onApplicationAdded={addApplicationOptimistic}
           onApplicationsUpdate={refreshApplications}

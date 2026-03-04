@@ -207,8 +207,6 @@ export default function AddApplication({
 
     try {
       const formDataToSend = new FormData();
-
-      // Общие поля
       formDataToSend.append("requestType", REQUEST_TYPES[requestType]);
       formDataToSend.append("name", formData.name);
       formDataToSend.append("organization", formData.organization);
@@ -293,7 +291,7 @@ export default function AddApplication({
         onClick={() => setIsOpen(!isOpen)}
         style={{ background: "var(--blue)" }}
       >
-        <span>Создать запрос</span>
+        Создать запрос
       </button>
 
       {isOpen && (
