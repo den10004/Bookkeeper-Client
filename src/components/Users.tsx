@@ -26,6 +26,7 @@ export default function Users() {
     } catch (err) {
       console.error("Ошибка загрузки пользователей:", err);
       setError("Не удалось загрузить список пользователей");
+      console.error(error);
     } finally {
       setLoadingAccountants(false);
     }
@@ -64,6 +65,7 @@ export default function Users() {
       const userMessage = errorDictionary[errorText] || errorText;
       alert(userMessage);
       setError(userMessage);
+      console.error(error);
       throw err;
     }
   };
@@ -126,6 +128,7 @@ export default function Users() {
       const userMessage = errorDictionary[errorText] || errorText;
       alert(userMessage);
       setError("Не удалось создать пользователя");
+      console.error(error);
       throw err;
     }
   };
