@@ -6,10 +6,12 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
   const [newUser, setNewUser] = useState({
     username: "",
     email: "",
-    role: roles.manager,
+    role: "",
     password: "",
     confirmPassword: "",
   });
+
+  console.log(newUser);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,7 +46,7 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
       setNewUser({
         username: "",
         email: "",
-        role: roles.manager,
+        role: "",
         password: "",
         confirmPassword: "",
       });
@@ -131,6 +133,9 @@ export default function CreateUser({ onSubmit, onCancel }: CreateUserProps) {
           required
           disabled={isSubmitting}
         >
+          <option value="" disabled>
+            Выберите роль
+          </option>
           {Object.entries(roles).map(([key, value]) => (
             <option key={key} value={key}>
               {value}

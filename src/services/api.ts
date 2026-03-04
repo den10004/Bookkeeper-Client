@@ -179,7 +179,7 @@ class ApiService {
         credentials: "include",
         body: JSON.stringify(data),
       });
-
+      console.log(data);
       return this.handleResponse<User>(response);
     } catch (err) {
       console.error("Ошибка при создании пользователя:", err);
