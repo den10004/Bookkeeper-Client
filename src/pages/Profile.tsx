@@ -7,7 +7,7 @@ import Applications from "../components/Applications";
 import AddApplication from "../components/AddApplication";
 import Account from "../components/Account";
 import Users from "../components/Users";
-import { ACCOUNTANT, DIRECTOR, MANAGER, roles, ROP } from "../constants";
+import { MANAGER, ROP } from "../constants";
 
 export default function Profile() {
   const { auth } = useAuth();
