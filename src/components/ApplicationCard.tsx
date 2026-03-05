@@ -223,14 +223,6 @@ export default function ApplicationCard({
   const saveChanges = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (Notification.permission === "granted") {
-      new Notification("Заявка обновлена", {
-        body: `Вы изменили заявку: ${application.name || "Без названия"}`,
-        icon: "/favicon.ico",
-        tag: `update-self-${application.id}`,
-      });
-    }
-
     if (!auth.accessToken) {
       console.error("Токен не найден");
       return;
@@ -310,6 +302,8 @@ export default function ApplicationCard({
       setIsEditing(false);
       setEditFormData({});
       setEditFiles([]);
+
+      // Убираем уведомление отсюда - оно будет отправлено через сокет
     } catch (error) {
       console.error("Ошибка при обновлении заявки:", error);
       alert("Ошибка при обновлении заявки. Пожалуйста, попробуйте снова.");

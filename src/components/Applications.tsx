@@ -3,7 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
-import { MANAGER, roles, ROP } from "../constants";
+import { MANAGER, roles, ROP, DIRECTOR } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -94,15 +94,25 @@ export default function Applications({
 
       const currentUserId = auth?.user?.id;
       const currentUserRole = auth?.user?.role;
+      const creatorId = newApp.userId; // ID создателя заявки
 
+      // Создатель НЕ должен получать уведомление о своей заявке
+      if (currentUserId === creatorId) return;
+
+      // Кто должен получать уведомления:
+      // 1. Директор
+      // 2. РОП
+      // 3. Назначенный бухгалтер (если есть)
       const shouldNotify =
         currentUserId &&
         (currentUserRole === roles.director ||
-          newApp.assignedAccountantId === currentUserId);
+          currentUserRole === ROP ||
+          (newApp.assignedAccountantId &&
+            newApp.assignedAccountantId === currentUserId));
 
-      if (shouldNotify && newApp.userId !== currentUserId) {
+      if (shouldNotify) {
         setToast({
-          message: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
+          message: `Новая заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
           type: "success",
         });
 
@@ -123,14 +133,26 @@ export default function Applications({
 
       const currentUserId = auth?.user?.id;
       const currentUserRole = auth?.user?.role;
+      const updaterId = updatedApp.updatedBy; // Кто обновил заявку
+      const creatorId = updatedApp.userId; // Кто создал заявку
 
+      // Тот, кто обновил заявку, НЕ должен получать уведомление
+      if (currentUserId === updaterId) return;
+
+      // Кто должен получать уведомления:
+      // 1. Директор
+      // 2. РОП
+      // 3. Назначенный бухгалтер
+      // 4. Создатель заявки (но только если это не он обновил)
       const shouldNotify =
         currentUserId &&
         (currentUserRole === roles.director ||
-          updatedApp.assignedAccountantId === currentUserId ||
           currentUserRole === ROP ||
-          updatedApp.userId === currentUserId);
-      if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
+          (updatedApp.assignedAccountantId &&
+            updatedApp.assignedAccountantId === currentUserId) ||
+          (creatorId && creatorId === currentUserId));
+
+      if (shouldNotify) {
         const appName = updatedApp.name || "Без названия";
         const updaterName = updatedApp.Updater?.username || MANAGER;
 
@@ -160,11 +182,22 @@ export default function Applications({
 
         const currentUserId = auth?.user?.id;
         const currentUserRole = auth?.user?.role;
+        const deleterId = payload.deletedBy; // Кто удалил заявку
 
+        // Тот, кто удалил заявку, НЕ должен получать уведомление
+        if (currentUserId === deleterId) return;
+
+        // Директор и РОП получают уведомления об удалении
         const shouldNotify =
-          currentUserId && (currentUserRole === roles.director || true);
+          currentUserId &&
+          (currentUserRole === roles.director || currentUserRole === ROP);
 
-        if (shouldNotify && payload.deletedBy !== currentUserId) {
+        if (shouldNotify) {
+          setToast({
+            message: `Заявка с ID ${payload.id} была удалена из системы`,
+            type: "warning",
+          });
+
           if (Notification.permission === "granted") {
             new Notification("Заявка удалена!", {
               body: `Заявка с ID ${payload.id} была удалена из системы`,
@@ -186,7 +219,7 @@ export default function Applications({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [auth?.accessToken]);
+  }, [auth?.accessToken, auth?.user?.id, auth?.user?.role]);
 
   return (
     <div>
