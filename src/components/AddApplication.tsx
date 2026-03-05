@@ -22,7 +22,7 @@ export default function AddApplication({
   const [requestType, setRequestType] =
     useState<keyof typeof REQUEST_TYPES>("NEW_CLIENT");
   const [formData, setFormData] = useState({
-    name: "",
+    name: "Запрос документа",
     organization: "",
     assignedAccountantId: "",
     cost: "",
@@ -311,22 +311,6 @@ export default function AddApplication({
                 <option value="EXISTING_CLIENT">Существующий клиент</option>
                 <option value="DOCUMENT_REQUEST">Запрос документа</option>
               </select>
-            </div>
-
-            <div>
-              <label htmlFor="name">
-                {isDocumentRequest ? "Название документа" : "Название франшизы"}{" "}
-                *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                minLength={3}
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-              />
             </div>
 
             <div>

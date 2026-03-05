@@ -230,15 +230,13 @@ export default function Applications({
               }
 
               return (
-                <>
-                  <LazyApplicationCard
-                    key={application.id}
-                    application={application}
-                    onApplicationUpdated={onApplicationUpdated}
-                    onApplicationsUpdate={onApplicationsUpdate}
-                    preload={preload}
-                  />
-                </>
+                <LazyApplicationCard
+                  key={application.id}
+                  application={application}
+                  onApplicationUpdated={onApplicationUpdated}
+                  onApplicationsUpdate={onApplicationsUpdate}
+                  preload={preload}
+                />
               );
             })}
           </div>
