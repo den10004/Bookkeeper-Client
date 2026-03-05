@@ -3,8 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
-import Toast from "./Toast";
-import { MANAGER, roles } from "../constants";
+import { MANAGER, roles, ROP } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -129,6 +128,7 @@ export default function Applications({
         currentUserId &&
         (currentUserRole === roles.director ||
           updatedApp.assignedAccountantId === currentUserId ||
+          currentUserRole === ROP ||
           updatedApp.userId === currentUserId);
       if (shouldNotify && updatedApp.updatedBy !== currentUserId) {
         const appName = updatedApp.name || "Без названия";
@@ -203,13 +203,6 @@ export default function Applications({
       ) : (
         <>
           <div className="cards__block">
-            {toast && (
-              <Toast
-                message={toast.message}
-                type={toast.type}
-                onClose={() => setToast(null)}
-              />
-            )}
             {applications.slice(0, visibleCount).map((application, index) => {
               const preload = index < 3;
 

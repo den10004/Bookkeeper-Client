@@ -98,7 +98,7 @@ export default function AddApplication({
   const resetForm = () => {
     setRequestType("NEW_CLIENT");
     setFormData({
-      name: "",
+      name: "Запрос документа",
       organization: "",
       assignedAccountantId: "",
       cost: "",
@@ -208,7 +208,7 @@ export default function AddApplication({
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("requestType", REQUEST_TYPES[requestType]);
-      formDataToSend.append("name", formData.name);
+      formDataToSend.append("name", "Запрос документа");
       formDataToSend.append("organization", formData.organization);
       formDataToSend.append(
         "assignedAccountantId",
@@ -312,6 +312,22 @@ export default function AddApplication({
                 <option value="DOCUMENT_REQUEST">Запрос документа</option>
               </select>
             </div>
+            {/*
+            <div>
+     
+              <label htmlFor="name">
+                {isDocumentRequest ? "Название документа" : "Название франшизы"}{" "}
+                *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                minLength={3}
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            </div>*/}
 
             <div>
               <label htmlFor="organization">Организация *</label>

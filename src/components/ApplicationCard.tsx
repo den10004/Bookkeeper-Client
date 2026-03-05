@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import FileUploader from "./FileUploader";
 import {
   DIRECTOR,
+  MANAGER,
   ROP,
   DOCUMENT_FORMATS,
   DOCUMENT_TYPES,
@@ -221,6 +222,15 @@ export default function ApplicationCard({
 
   const saveChanges = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    if (Notification.permission === "granted") {
+      new Notification("Заявка обновлена", {
+        body: `Вы изменили заявку: ${application.name || "Без названия"}`,
+        icon: "/favicon.ico",
+        tag: `update-self-${application.id}`,
+      });
+    }
+
     if (!auth.accessToken) {
       console.error("Токен не найден");
       return;
