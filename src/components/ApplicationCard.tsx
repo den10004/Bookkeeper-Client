@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import FileUploader from "./FileUploader";
 import {
   DIRECTOR,
-  MANAGER,
   ROP,
   DOCUMENT_FORMATS,
   DOCUMENT_TYPES,
@@ -255,7 +254,6 @@ export default function ApplicationCard({
       if (updateData.periodTo) {
         updateData.periodTo = formatDateForApi(updateData.periodTo as string);
       }
-
       if (
         !updateData.assignedAccountantId &&
         application.assignedAccountantId
@@ -269,6 +267,7 @@ export default function ApplicationCard({
         }
       });
 
+      let response;
       if (hasFiles) {
         const formData = new FormData();
 
@@ -282,9 +281,13 @@ export default function ApplicationCard({
           formData.append("files", file);
         });
 
-        await api.updateApplication(auth.accessToken, application.id, formData);
+        response = await api.updateApplication(
+          auth.accessToken,
+          application.id,
+          formData,
+        );
       } else {
-        await api.updateApplication(
+        response = await api.updateApplication(
           auth.accessToken,
           application.id,
           updateData,
@@ -302,20 +305,13 @@ export default function ApplicationCard({
       setIsEditing(false);
       setEditFormData({});
       setEditFiles([]);
-
-      // Убираем уведомление отсюда - оно будет отправлено через сокет
     } catch (error) {
       console.error("Ошибка при обновлении заявки:", error);
       alert("Ошибка при обновлении заявки. Пожалуйста, попробуйте снова.");
-
-      if (onApplicationsUpdate) {
-        await onApplicationsUpdate();
-      }
     } finally {
       setIsUpdating(false);
     }
   };
-
   const downloadFile = (
     fileData: FileData,
     downloadLink: DownloadLink | undefined,
@@ -658,7 +654,7 @@ export default function ApplicationCard({
                   backgroundColor: isUpdating ? "var(--gray)" : "var(--green)",
                 }}
               >
-                {isUpdating ? "Сохранение..." : "Сохранить"}
+                Сохранить
               </button>
               <button
                 onClick={cancelEditing}
@@ -685,7 +681,7 @@ export default function ApplicationCard({
                     backgroundColor: isDeleting ? "var(--gray)" : "var(--red)",
                   }}
                 >
-                  {isDeleting ? "Удаление..." : "Удалить"}
+                  Удалить
                 </button>
               ) : null}
             </div>

@@ -3,7 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
-import { MANAGER, roles, ROP, DIRECTOR } from "../constants";
+import { MANAGER, roles, ROP } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -66,25 +66,13 @@ export default function Applications({
   }, [initialApplications]);
 
   useEffect(() => {
-    if (Notification.permission === "default") {
-      Notification.requestPermission().then((permission) => {
-        console.log("Разрешение на уведомления:", permission);
-        if (permission === "granted") {
-          console.log("Уведомления разрешены!");
-        } else if (permission === "denied") {
-          console.warn("Пользователь запретил уведомления");
-        }
-      });
-    }
-  }, []);
-
-  useEffect(() => {
     if (!auth?.accessToken) return;
 
     const socket = createSocket(auth.accessToken);
     if (!socket) return;
 
     socket.connect();
+    socketRef.current = socket;
 
     socket.on("application:created", (newApp: Application) => {
       setApplications((prev) => {
@@ -94,15 +82,9 @@ export default function Applications({
 
       const currentUserId = auth?.user?.id;
       const currentUserRole = auth?.user?.role;
-      const creatorId = newApp.userId; // ID создателя заявки
-
-      // Создатель НЕ должен получать уведомление о своей заявке
+      const creatorId = newApp.userId;
       if (currentUserId === creatorId) return;
 
-      // Кто должен получать уведомления:
-      // 1. Директор
-      // 2. РОП
-      // 3. Назначенный бухгалтер (если есть)
       const shouldNotify =
         currentUserId &&
         (currentUserRole === roles.director ||
@@ -127,23 +109,24 @@ export default function Applications({
     });
 
     socket.on("application:updated", (updatedApp: Application) => {
-      setApplications((prev) =>
-        prev.map((a) => (a.id === updatedApp.id ? updatedApp : a)),
-      );
+      setApplications((prev) => {
+        const exists = prev.some((a) => a.id === updatedApp.id);
+        if (!exists) {
+          return [...prev, updatedApp];
+        }
+
+        return prev.map((a) => (a.id === updatedApp.id ? updatedApp : a));
+      });
 
       const currentUserId = auth?.user?.id;
       const currentUserRole = auth?.user?.role;
-      const updaterId = updatedApp.updatedBy; // Кто обновил заявку
-      const creatorId = updatedApp.userId; // Кто создал заявку
+      const updaterId = updatedApp.updatedBy;
+      const creatorId = updatedApp.userId;
 
-      // Тот, кто обновил заявку, НЕ должен получать уведомление
-      if (currentUserId === updaterId) return;
+      if (currentUserId === updaterId) {
+        return;
+      }
 
-      // Кто должен получать уведомления:
-      // 1. Директор
-      // 2. РОП
-      // 3. Назначенный бухгалтер
-      // 4. Создатель заявки (но только если это не он обновил)
       const shouldNotify =
         currentUserId &&
         (currentUserRole === roles.director ||
@@ -155,11 +138,6 @@ export default function Applications({
       if (shouldNotify) {
         const appName = updatedApp.name || "Без названия";
         const updaterName = updatedApp.Updater?.username || MANAGER;
-
-        setToast({
-          message: `Заявка обновлена: ${appName} (изменения от ${updaterName})`,
-          type: "success",
-        });
 
         if (Notification.permission === "granted") {
           new Notification("Заявка обновлена!", {
@@ -173,37 +151,39 @@ export default function Applications({
 
     socket.on(
       "application:deleted",
-      (payload: { id: string | number; deletedBy?: number }) => {
+      (payload: {
+        id: string | number;
+        deletedBy?: number;
+        name?: string;
+        deletedByUsername?: string;
+      }) => {
         const deletedId = String(payload.id);
-
-        setApplications((prev) =>
-          prev.filter((a) => String(a.id) !== deletedId),
-        );
+        setApplications((prev) => {
+          return prev.filter((a) => String(a.id) !== deletedId);
+        });
 
         const currentUserId = auth?.user?.id;
-        const currentUserRole = auth?.user?.role;
-        const deleterId = payload.deletedBy; // Кто удалил заявку
-
-        // Тот, кто удалил заявку, НЕ должен получать уведомление
-        if (currentUserId === deleterId) return;
-
-        // Директор и РОП получают уведомления об удалении
-        const shouldNotify =
-          currentUserId &&
-          (currentUserRole === roles.director || currentUserRole === ROP);
-
-        if (shouldNotify) {
-          setToast({
-            message: `Заявка с ID ${payload.id} была удалена из системы`,
-            type: "warning",
-          });
+        const deleterId = payload.deletedBy;
+        if (currentUserId !== deleterId) {
+          const appName = payload.name || "Заявка";
+          const deleterName = payload.deletedByUsername || "Пользователь";
 
           if (Notification.permission === "granted") {
-            new Notification("Заявка удалена!", {
-              body: `Заявка с ID ${payload.id} была удалена из системы`,
-              icon: "/favicon.ico",
-              tag: `delete-app-${payload.id}`,
-            });
+            try {
+              const notification = new Notification("Заявка удалена!", {
+                body: `Заявка "${appName}" была удалена из системы пользователем ${deleterName}`,
+                icon: "/favicon.ico",
+                tag: `delete-app-${payload.id}`,
+                requireInteraction: true,
+              });
+
+              notification.onclick = () => {
+                window.focus();
+                notification.close();
+              };
+            } catch (notifError) {
+              console.error("Ошибка при отправке уведомления:", notifError);
+            }
           }
         }
       },
@@ -241,10 +221,7 @@ export default function Applications({
 
               if (index === visibleCount - 1) {
                 return (
-                  <div
-                    ref={index === visibleCount - 1 ? lastCardRef : null}
-                    key={application.id}
-                  >
+                  <div ref={lastCardRef} key={application.id}>
                     <LazyApplicationCard
                       application={application}
                       onApplicationUpdated={onApplicationUpdated}
