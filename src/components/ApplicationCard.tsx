@@ -428,12 +428,7 @@ export default function ApplicationCard({
   const showDocumentFields = isDocumentRequest;
 
   return (
-    <div
-      className={`applications__card ${isEditing ? "editing" : ""}`}
-      style={{
-        border: isEditing ? "2px solid var(--green)" : "1px solid var(--gray)",
-      }}
-    >
+    <div className={`applications__card ${isEditing ? "editing" : ""}`}>
       <div className="applications__header">
         <h3 className="applications__title">
           {application.name || "Без названия"}
@@ -444,7 +439,7 @@ export default function ApplicationCard({
           <div className="applications__info-item">
             <span className="applications__info-label">Создатель:</span>
             <span className="applications__field-value">
-              {application.Creator?.username || "Не указано"}
+              {application.Creator?.username || "Пользователь удалён"}
             </span>
           </div>
           <div className="applications__info-item">
