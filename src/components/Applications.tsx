@@ -3,7 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
-import { MANAGER, roles, ROP } from "../constants";
+import { DIRECTOR, MANAGER, roles, ROP } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -87,7 +87,7 @@ export default function Applications({
 
       const shouldNotify =
         currentUserId &&
-        (currentUserRole === roles.director ||
+        (currentUserRole === DIRECTOR ||
           currentUserRole === ROP ||
           (newApp.assignedAccountantId &&
             newApp.assignedAccountantId === currentUserId));
@@ -129,7 +129,7 @@ export default function Applications({
 
       const shouldNotify =
         currentUserId &&
-        (currentUserRole === roles.director ||
+        (currentUserRole === DIRECTOR ||
           currentUserRole === ROP ||
           (updatedApp.assignedAccountantId &&
             updatedApp.assignedAccountantId === currentUserId) ||
