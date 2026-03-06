@@ -267,7 +267,7 @@ export default function ApplicationCard({
         }
       });
 
-      let response;
+      let response: any;
       if (hasFiles) {
         const formData = new FormData();
 
@@ -603,7 +603,7 @@ export default function ApplicationCard({
             <div className="applications__field-group">
               <div className="applications__field">
                 <span className="applications__field-label">
-                  Количество заявок:
+                  Количество лидов:
                 </span>
                 <span className="applications__field-value">
                   {isEditing
