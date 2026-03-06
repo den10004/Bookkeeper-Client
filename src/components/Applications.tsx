@@ -3,7 +3,7 @@ import type { Application } from "../types/auth";
 import { LazyApplicationCard } from "./LazyApplicationCard";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSocket } from "../hooks/socket";
-import { DIRECTOR, MANAGER, roles, ROP } from "../constants";
+import { DIRECTOR, MANAGER, ROP, ACCOUNTANT } from "../constants";
 
 interface ApplicationsProps {
   loadingApps: boolean;
@@ -60,6 +60,21 @@ export default function Applications({
     },
     [loadingApps, hasMore, applications.length],
   );
+
+  const filteredApplications = applications.filter((app) => {
+    const userRole = auth?.user?.role;
+    const userId = auth?.user?.id;
+
+    if (userRole === DIRECTOR || userRole === ROP) {
+      return true;
+    }
+
+    if (userRole === MANAGER || userRole === ACCOUNTANT) {
+      return app.userId === userId || app.assignedAccountantId === userId;
+    }
+
+    return true;
+  });
 
   useEffect(() => {
     setApplications(initialApplications);
@@ -211,40 +226,46 @@ export default function Applications({
         <div className="cards-errors">
           <p>{appsError}</p>
         </div>
-      ) : applications.length === 0 ? (
-        <div className="cards-errors">Нет заявок</div>
+      ) : filteredApplications.length === 0 ? (
+        <div className="cards-errors">
+          {auth?.user?.role === MANAGER || auth?.user?.role === ACCOUNTANT
+            ? "У вас нет доступных заявок"
+            : "Нет заявок"}
+        </div>
       ) : (
         <>
           <div className="cards__block">
-            {applications.slice(0, visibleCount).map((application, index) => {
-              const preload = index < 3;
+            {filteredApplications
+              .slice(0, visibleCount)
+              .map((application, index) => {
+                const preload = index < 3;
 
-              if (index === visibleCount - 1) {
+                if (index === visibleCount - 1) {
+                  return (
+                    <div ref={lastCardRef} key={application.id}>
+                      <LazyApplicationCard
+                        application={application}
+                        onApplicationUpdated={onApplicationUpdated}
+                        onApplicationsUpdate={onApplicationsUpdate}
+                        preload={preload}
+                      />
+                    </div>
+                  );
+                }
+
                 return (
-                  <div ref={lastCardRef} key={application.id}>
-                    <LazyApplicationCard
-                      application={application}
-                      onApplicationUpdated={onApplicationUpdated}
-                      onApplicationsUpdate={onApplicationsUpdate}
-                      preload={preload}
-                    />
-                  </div>
+                  <LazyApplicationCard
+                    key={application.id}
+                    application={application}
+                    onApplicationUpdated={onApplicationUpdated}
+                    onApplicationsUpdate={onApplicationsUpdate}
+                    preload={preload}
+                  />
                 );
-              }
-
-              return (
-                <LazyApplicationCard
-                  key={application.id}
-                  application={application}
-                  onApplicationUpdated={onApplicationUpdated}
-                  onApplicationsUpdate={onApplicationsUpdate}
-                  preload={preload}
-                />
-              );
-            })}
+              })}
           </div>
 
-          {hasMore && visibleCount < applications.length && (
+          {hasMore && visibleCount < filteredApplications.length && (
             <div className="loading-more">
               <div className="loading-spinner"></div>
               <span>Загрузка еще заявок...</span>
