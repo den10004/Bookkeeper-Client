@@ -555,48 +555,6 @@ table {
 
 }
 
-@media (max-width: 768px) {
-  .applications__row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .applications__field-group {
-    width: 100%;
-    min-width: unset;
-  }
-
-  .applications__field {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .applications__actions {
-    flex-wrap: wrap;
-  }
-
-  .applications__actions button {
-    flex: 1 1 auto;
-  }
-}
-
-@media (max-width: 480px) {
-  .applications__card {
-    padding: 12px;
-  }
-
-  .applications__header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .applications__type-badge {
-    align-self: flex-start;
-  }
-}
-
 /* Анимации */
 @keyframes fadeIn {
   from {
@@ -845,6 +803,66 @@ table {
   }
 }
 
+/*************@media***********************/
+
+
+
+@media (max-width: 800px) {
+
+
+  .cards__block {
+    overflow-x: auto;
+  }
+
+  .applications__header {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .applications__header h3 {
+    order: 1;
+  }
+
+  .applications__header span {
+    order: 2;
+  }
+
+  .applications__type-badge {
+    align-self: flex-start;
+  }
+
+  .applications__info {
+    justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    .applications__row {
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .applications__field-group {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .applications__field {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .applications__actions {
+      flex-wrap: wrap;
+    }
+
+    .applications__actions button {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+
 @media (max-width: 667px) {
   .applications__card {
     display: flex;
@@ -871,10 +889,34 @@ table {
   .users__header>h3 {
     font-size: 16px;
   }
+
+
+  .applications__row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .applications__info {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .applications__info>div {
+    justify-content: space-between;
+    display: flex;
+    width: 100%;
+  }
 }
 
 
+
+
 @media (max-width: 600px) {
+  .account__block {
+    padding: 0 10px;
+  }
+
   .users__header {
     flex-direction: column;
   }
@@ -882,5 +924,12 @@ table {
   .create-user__form {
     justify-content: start;
     flex-direction: column;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .applications__card {
+    padding: 12px;
   }
 }
