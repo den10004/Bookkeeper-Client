@@ -602,7 +602,9 @@ export default function ApplicationCard({
           <>
             <div className="applications__field-group">
               <div className="applications__field">
-                <span className="applications__field-label">Кол-во:</span>
+                <span className="applications__field-label">
+                  Количество заявок:
+                </span>
                 <span className="applications__field-value">
                   {isEditing
                     ? renderEditableField("quantity", "", "number")
@@ -613,7 +615,9 @@ export default function ApplicationCard({
 
             <div className="applications__field-group">
               <div className="applications__field">
-                <span className="applications__field-label">Стоимость:</span>
+                <span className="applications__field-label">
+                  Стоимость лидов:
+                </span>
                 <span className="applications__field-value currency">
                   {isEditing
                     ? renderEditableField("cost", "", "number")

@@ -342,6 +342,8 @@ table {
 .applications__row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, auto);
+  grid-auto-flow: column;
   gap: 5px;
 
 }
@@ -413,14 +415,14 @@ table {
 }
 
 .applications__title {
-  font-size: 1.2rem;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary, #212529);
   margin: 0;
 }
 
 .applications__id {
-  font-size: 0.85rem;
+  font-size: 16px;
   color: var(--text-secondary, #6c757d);
   margin-left: 8px;
 }
