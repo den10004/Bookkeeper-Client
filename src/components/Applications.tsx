@@ -15,91 +15,69 @@ interface ApplicationsProps {
   onApplicationsUpdate?: () => void;
 }
 
-// 🔧 Утилита для надежной отправки уведомлений
+// Простой сервис уведомлений без Service Worker
 const NotificationService = {
   // Проверка поддержки
   isSupported(): boolean {
     return "Notification" in window;
   },
 
-  // Получение статуса
-  getPermission(): NotificationPermission {
-    return this.isSupported() ? Notification.permission : "denied";
-  },
-
-  // Запрос разрешения при старте
+  // Инициализация (запрос разрешения)
   async init(): Promise<boolean> {
     if (!this.isSupported()) {
       console.log("❌ Уведомления не поддерживаются");
       return false;
     }
 
+    // Если уже есть разрешение
     if (Notification.permission === "granted") {
-      console.log("✅ Разрешение уже есть");
+      console.log("✅ Разрешение на уведомления уже есть");
       return true;
     }
 
+    // Если еще не спрашивали - запрашиваем
     if (Notification.permission === "default") {
-      console.log("📨 Запрашиваем разрешение...");
       try {
+        console.log("📨 Запрашиваем разрешение на уведомления...");
         const permission = await Notification.requestPermission();
-        console.log("📨 Результат:", permission);
+        console.log("📨 Разрешение получено:", permission);
         return permission === "granted";
       } catch (error) {
-        console.error("❌ Ошибка запроса:", error);
+        console.error("❌ Ошибка при запросе разрешения:", error);
         return false;
       }
     }
 
+    // Если запрещено
     console.log("❌ Уведомления запрещены пользователем");
     return false;
   },
 
-  // Отправка уведомления
-  async send(
+  // Отправка уведомления (только простой способ, без Service Worker)
+  send(
     title: string,
-    options: NotificationOptions & { onClick?: () => void } = {},
-  ): Promise<boolean> {
-    if (!this.isSupported()) {
-      console.log("❌ Уведомления не поддерживаются");
-      return false;
-    }
-
-    // Проверяем разрешение
-    if (Notification.permission !== "granted") {
-      console.log("❌ Нет разрешения, статус:", Notification.permission);
+    options: { body?: string; tag?: string; onClick?: () => void } = {},
+  ): boolean {
+    // Проверяем поддержку и разрешение
+    if (!this.isSupported() || Notification.permission !== "granted") {
+      console.log("❌ Нельзя отправить уведомление:", {
+        supported: this.isSupported(),
+        permission: Notification.permission,
+      });
       return false;
     }
 
     try {
-      // Стандартные опции для надежности
-      const defaultOptions: NotificationOptions = {
+      // Создаем уведомление как в тесте 1
+      const notification = new Notification(title, {
+        body: options.body || "",
         icon: "/favicon.ico",
-        badge: "/favicon.ico",
-        silent: false,
-        requireInteraction: true, // Критично для Windows
-        tag: `notify-${Date.now()}`,
-        ...options,
-      };
+        tag: options.tag || `notify-${Date.now()}`,
+        requireInteraction: true, // Важно для Windows
+        silent: false, // Со звуком
+      });
 
-      // Пытаемся отправить через Service Worker (надежнее для фоновых вкладок)
-      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          await registration.showNotification(title, defaultOptions);
-          console.log("✅ Уведомление через Service Worker");
-          return true;
-        } catch (swError) {
-          console.log(
-            "⚠️ Service Worker уведомление не сработало, пробуем обычное:",
-            swError,
-          );
-        }
-      }
-
-      // Fallback на обычное уведомление
-      const notification = new Notification(title, defaultOptions);
-
+      // Обработчик клика
       if (options.onClick) {
         notification.onclick = options.onClick;
       } else {
@@ -109,14 +87,10 @@ const NotificationService = {
         };
       }
 
-      notification.onerror = (error) => {
-        console.error("❌ Ошибка показа уведомления:", error);
-      };
-
-      console.log("✅ Обычное уведомление отправлено");
+      console.log("✅ Уведомление отправлено:", title);
       return true;
     } catch (error) {
-      console.error("❌ Критическая ошибка уведомления:", error);
+      console.error("❌ Ошибка при отправке уведомления:", error);
       return false;
     }
   },
@@ -134,14 +108,14 @@ export default function Applications({
     useState<Application[]>(initialApplications);
   const [visibleCount, setVisibleCount] = useState(5);
   const [hasMore, setHasMore] = useState(true);
+  const [notificationsReady, setNotificationsReady] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   const socketRef = useRef<ReturnType<typeof createSocket>>(null);
-  const [notificationReady, setNotificationReady] = useState(false);
 
-  // Инициализируем уведомления при монтировании
+  // Инициализация уведомлений при загрузке
   useEffect(() => {
     NotificationService.init().then((ready) => {
-      setNotificationReady(ready);
+      setNotificationsReady(ready);
       if (ready) {
         console.log("🚀 Уведомления готовы к работе");
       }
@@ -187,14 +161,14 @@ export default function Applications({
     setApplications(initialApplications);
   }, [initialApplications]);
 
-  // Универсальная функция показа уведомления
-  const showNotification = async (
+  // Функция для показа уведомления
+  const showNotification = (
     type: "created" | "updated" | "deleted",
     app:
       | Application
       | { id: string | number; name?: string; deletedByUsername?: string },
   ) => {
-    if (!notificationReady) {
+    if (!notificationsReady) {
       console.log("📱 Уведомления не готовы, пропускаем");
       return;
     }
@@ -203,7 +177,6 @@ export default function Applications({
     let body = "";
     let tag = "";
 
-    // Формируем сообщение в зависимости от типа
     switch (type) {
       case "created":
         title = "📋 Новая заявка!";
@@ -224,23 +197,14 @@ export default function Applications({
         break;
     }
 
-    // Отправляем уведомление ВСЕГДА, независимо от активности вкладки
-    console.log(`📨 Отправка уведомления [${type}]:`, {
-      title,
-      body,
-      tabActive: document.hasFocus(),
-      tabVisible: document.visibilityState,
-    });
-
-    await NotificationService.send(title, {
+    // Отправляем уведомление (простой способ)
+    NotificationService.send(title, {
       body,
       tag,
-      icon: "/favicon.ico",
       onClick: () => {
         window.focus();
-        console.log("👆 Уведомление кликнуто, переходим к заявке", app.id);
-        // Можно добавить навигацию к конкретной заявке
-        // Например: navigateToApplication(app.id)
+        console.log("👆 Уведомление кликнуто, заявка:", app.id);
+        // Здесь можно добавить навигацию к заявке
       },
     });
   };
@@ -339,7 +303,7 @@ export default function Applications({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [auth?.accessToken, auth?.user?.id, auth?.user?.role, notificationReady]);
+  }, [auth?.accessToken, auth?.user?.id, auth?.user?.role, notificationsReady]);
 
   return (
     <div>
