@@ -15,6 +15,113 @@ interface ApplicationsProps {
   onApplicationsUpdate?: () => void;
 }
 
+// 🔧 Утилита для надежной отправки уведомлений
+const NotificationService = {
+  // Проверка поддержки
+  isSupported(): boolean {
+    return "Notification" in window;
+  },
+
+  // Получение статуса
+  getPermission(): NotificationPermission {
+    return this.isSupported() ? Notification.permission : "denied";
+  },
+
+  // Запрос разрешения при старте
+  async init(): Promise<boolean> {
+    if (!this.isSupported()) {
+      console.log("❌ Уведомления не поддерживаются");
+      return false;
+    }
+
+    if (Notification.permission === "granted") {
+      console.log("✅ Разрешение уже есть");
+      return true;
+    }
+
+    if (Notification.permission === "default") {
+      console.log("📨 Запрашиваем разрешение...");
+      try {
+        const permission = await Notification.requestPermission();
+        console.log("📨 Результат:", permission);
+        return permission === "granted";
+      } catch (error) {
+        console.error("❌ Ошибка запроса:", error);
+        return false;
+      }
+    }
+
+    console.log("❌ Уведомления запрещены пользователем");
+    return false;
+  },
+
+  // Отправка уведомления
+  async send(
+    title: string,
+    options: NotificationOptions & { onClick?: () => void } = {},
+  ): Promise<boolean> {
+    if (!this.isSupported()) {
+      console.log("❌ Уведомления не поддерживаются");
+      return false;
+    }
+
+    // Проверяем разрешение
+    if (Notification.permission !== "granted") {
+      console.log("❌ Нет разрешения, статус:", Notification.permission);
+      return false;
+    }
+
+    try {
+      // Стандартные опции для надежности
+      const defaultOptions: NotificationOptions = {
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        silent: false,
+        requireInteraction: true, // Критично для Windows
+        tag: `notify-${Date.now()}`,
+        ...options,
+      };
+
+      // Пытаемся отправить через Service Worker (надежнее для фоновых вкладок)
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification(title, defaultOptions);
+          console.log("✅ Уведомление через Service Worker");
+          return true;
+        } catch (swError) {
+          console.log(
+            "⚠️ Service Worker уведомление не сработало, пробуем обычное:",
+            swError,
+          );
+        }
+      }
+
+      // Fallback на обычное уведомление
+      const notification = new Notification(title, defaultOptions);
+
+      if (options.onClick) {
+        notification.onclick = options.onClick;
+      } else {
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+
+      notification.onerror = (error) => {
+        console.error("❌ Ошибка показа уведомления:", error);
+      };
+
+      console.log("✅ Обычное уведомление отправлено");
+      return true;
+    } catch (error) {
+      console.error("❌ Критическая ошибка уведомления:", error);
+      return false;
+    }
+  },
+};
+
 export default function Applications({
   loadingApps,
   appsError,
@@ -29,64 +136,17 @@ export default function Applications({
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
   const socketRef = useRef<ReturnType<typeof createSocket>>(null);
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "info" | "warning" | "error";
-  } | null>(null);
+  const [notificationReady, setNotificationReady] = useState(false);
 
-  // 🔍 ОТЛАДКА: Проверяем поддержку уведомлений при монтировании компонента
+  // Инициализируем уведомления при монтировании
   useEffect(() => {
-    console.group("🔍 Notification Debug");
-    console.log(
-      "1. Поддерживает ли браузер уведомления?",
-      "Notification" in window,
-    );
-
-    if ("Notification" in window) {
-      console.log("2. Текущий статус permission:", Notification.permission);
-      console.log("3. Тип значения:", typeof Notification.permission);
-      console.log("4. Длина строки:", Notification.permission.length);
-      console.log(
-        "5. Код символов:",
-        [...Notification.permission].map((c) => c.charCodeAt(0)),
-      );
-
-      // Проверяем на скрытые символы
-      const permissionValue = Notification.permission;
-      const isExactMatch = permissionValue === "granted";
-      const isLooseMatch = permissionValue.trim() === "granted";
-
-      console.log('6. Точное совпадение с "granted":', isExactMatch);
-      console.log("7. Совпадение после trim():", isLooseMatch);
-
-      if (!isExactMatch && isLooseMatch) {
-        console.warn("⚠️ Обнаружены пробельные символы в значении permission!");
+    NotificationService.init().then((ready) => {
+      setNotificationReady(ready);
+      if (ready) {
+        console.log("🚀 Уведомления готовы к работе");
       }
-    }
-
-    // Проверяем настройки Windows (только для Chrome)
-    const isChrome =
-      /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
-    const isWindows = navigator.platform.includes("Win");
-
-    if (isChrome && isWindows) {
-      console.log("8. Браузер: Chrome на Windows");
-      console.log("9. User Agent:", navigator.userAgent);
-      console.log(
-        "10. Версия Chrome:",
-        navigator.userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/)?.[1],
-      );
-    }
-
-    console.groupEnd();
+    });
   }, []);
-
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
 
   const lastCardRef = useCallback(
     (node: HTMLDivElement) => {
@@ -127,91 +187,62 @@ export default function Applications({
     setApplications(initialApplications);
   }, [initialApplications]);
 
-  // 🔧 Функция для безопасной отправки уведомлений
-  const sendSafeNotification = (
-    title: string,
-    options: NotificationOptions,
+  // Универсальная функция показа уведомления
+  const showNotification = async (
+    type: "created" | "updated" | "deleted",
+    app:
+      | Application
+      | { id: string | number; name?: string; deletedByUsername?: string },
   ) => {
-    // Проверка поддержки
-    if (!("Notification" in window)) {
-      console.log("❌ Уведомления не поддерживаются браузером");
-      return false;
+    if (!notificationReady) {
+      console.log("📱 Уведомления не готовы, пропускаем");
+      return;
     }
 
-    // 🔍 Детальная отладка перед отправкой
-    console.group("🔔 Попытка отправки уведомления");
-    console.log("Title:", title);
-    console.log("Permission status:", Notification.permission);
-    console.log("Permission type:", typeof Notification.permission);
-    console.log("Permission length:", Notification.permission.length);
-    console.log(
-      "Permission chars:",
-      [...Notification.permission].map((c) => c.charCodeAt(0)),
-    );
+    let title = "";
+    let body = "";
+    let tag = "";
 
-    // Пробуем разные способы проверки
-    const strictCheck = Notification.permission === "granted";
-    const trimCheck = Notification.permission.trim() === "granted";
-    const lowerCheck = Notification.permission.toLowerCase() === "granted";
+    // Формируем сообщение в зависимости от типа
+    switch (type) {
+      case "created":
+        title = "📋 Новая заявка!";
+        body = `Заявка: ${(app as Application).name || "Без названия"}\nОт: ${(app as Application).Creator?.username || "Пользователь"}`;
+        tag = `new-app-${app.id}`;
+        break;
 
-    console.log("Строгая проверка (===):", strictCheck);
-    console.log("Проверка с trim():", trimCheck);
-    console.log("Проверка с toLowerCase():", lowerCheck);
+      case "updated":
+        title = "✏️ Заявка обновлена!";
+        body = `Заявка: ${(app as Application).name || "Без названия"}\nИзменения от: ${(app as Application).Updater?.username || "Пользователь"}`;
+        tag = `update-app-${app.id}`;
+        break;
 
-    // Если есть невидимые символы, используем более гибкую проверку
-    const isGranted = trimCheck || lowerCheck;
-
-    if (!isGranted) {
-      console.log("❌ Нет разрешения на уведомления");
-
-      // Если статус "default", пробуем запросить разрешение
-      if (
-        Notification.permission === "default" ||
-        Notification.permission.trim() === "default"
-      ) {
-        console.log("📨 Запрашиваем разрешение...");
-        Notification.requestPermission().then((permission) => {
-          console.log("Новый статус после запроса:", permission);
-          if (permission === "granted") {
-            // Повторяем отправку
-            try {
-              new Notification(title, options);
-              console.log("✅ Уведомление отправлено после запроса разрешения");
-            } catch (e) {
-              console.error("❌ Ошибка при отправке:", e);
-            }
-          }
-        });
-      }
-
-      console.groupEnd();
-      return false;
+      case "deleted":
+        title = "🗑️ Заявка удалена!";
+        body = `Заявка "${app.name || "Заявка"}" была удалена пользователем ${(app as any).deletedByUsername || "Пользователь"}`;
+        tag = `delete-app-${app.id}`;
+        break;
     }
 
-    // Пробуем отправить уведомление
-    try {
-      const notification = new Notification(title, {
-        ...options,
-        silent: false, // Явно включаем звук
-      });
+    // Отправляем уведомление ВСЕГДА, независимо от активности вкладки
+    console.log(`📨 Отправка уведомления [${type}]:`, {
+      title,
+      body,
+      tabActive: document.hasFocus(),
+      tabVisible: document.visibilityState,
+    });
 
-      notification.onclick = () => {
+    await NotificationService.send(title, {
+      body,
+      tag,
+      icon: "/favicon.ico",
+      onClick: () => {
         window.focus();
-        notification.close();
-      };
-
-      notification.onerror = (error) => {
-        console.error("❌ Ошибка при показе уведомления:", error);
-      };
-
-      console.log("✅ Уведомление успешно создано");
-      console.groupEnd();
-      return true;
-    } catch (error) {
-      console.error("❌ Ошибка при создании уведомления:", error);
-      console.groupEnd();
-      return false;
-    }
+        console.log("👆 Уведомление кликнуто, переходим к заявке", app.id);
+        // Можно добавить навигацию к конкретной заявке
+        // Например: navigateToApplication(app.id)
+      },
+    });
   };
 
   useEffect(() => {
@@ -232,6 +263,7 @@ export default function Applications({
       const currentUserId = auth?.user?.id;
       const currentUserRole = auth?.user?.role;
       const creatorId = newApp.userId;
+
       if (currentUserId === creatorId) return;
 
       const shouldNotify =
@@ -242,18 +274,7 @@ export default function Applications({
             newApp.assignedAccountantId === currentUserId));
 
       if (shouldNotify) {
-        setToast({
-          message: `Новая заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
-          type: "success",
-        });
-
-        // 🔔 Используем нашу новую функцию с отладкой
-        sendSafeNotification("Новая заявка!", {
-          body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
-          icon: "/favicon.ico",
-          tag: `new-app-${newApp.id}`,
-          requireInteraction: false,
-        });
+        showNotification("created", newApp);
       }
     });
 
@@ -263,7 +284,6 @@ export default function Applications({
         if (!exists) {
           return [...prev, updatedApp];
         }
-
         return prev.map((a) => (a.id === updatedApp.id ? updatedApp : a));
       });
 
@@ -272,9 +292,7 @@ export default function Applications({
       const updaterId = updatedApp.updatedBy;
       const creatorId = updatedApp.userId;
 
-      if (currentUserId === updaterId) {
-        return;
-      }
+      if (currentUserId === updaterId) return;
 
       const shouldNotify =
         currentUserId &&
@@ -285,16 +303,7 @@ export default function Applications({
           (creatorId && creatorId === currentUserId));
 
       if (shouldNotify) {
-        const appName = updatedApp.name || "Без названия";
-        const updaterName = updatedApp.Updater?.username || MANAGER;
-
-        // 🔔 Используем нашу новую функцию с отладкой
-        sendSafeNotification("Заявка обновлена!", {
-          body: `Заявка: ${appName}\nИзменения от: ${updaterName}`,
-          icon: "/favicon.ico",
-          tag: `update-app-${updatedApp.id}`,
-          requireInteraction: false,
-        });
+        showNotification("updated", updatedApp);
       }
     });
 
@@ -313,17 +322,9 @@ export default function Applications({
 
         const currentUserId = auth?.user?.id;
         const deleterId = payload.deletedBy;
-        if (currentUserId !== deleterId) {
-          const appName = payload.name || "Заявка";
-          const deleterName = payload.deletedByUsername || "Пользователь";
 
-          // 🔔 Используем нашу новую функцию с отладкой
-          sendSafeNotification("Заявка удалена!", {
-            body: `Заявка "${appName}" была удалена из системы пользователем ${deleterName}`,
-            icon: "/favicon.ico",
-            tag: `delete-app-${payload.id}`,
-            requireInteraction: true,
-          });
+        if (currentUserId !== deleterId) {
+          showNotification("deleted", payload);
         }
       },
     );
@@ -338,7 +339,7 @@ export default function Applications({
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [auth?.accessToken, auth?.user?.id, auth?.user?.role]);
+  }, [auth?.accessToken, auth?.user?.id, auth?.user?.role, notificationReady]);
 
   return (
     <div>
