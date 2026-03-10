@@ -9,6 +9,7 @@ import {
   DOCUMENT_FORMATS,
   DOCUMENT_TYPES,
   REQUEST_TYPES,
+  STATUS_LABELS,
 } from "../constants";
 
 interface ApplicationCardProps {
@@ -428,7 +429,9 @@ export default function ApplicationCard({
   const showDocumentFields = isDocumentRequest;
 
   return (
-    <div className={`applications__card ${isEditing ? "editing" : ""}`}>
+    <div
+      className={`applications__card ${isEditing ? "editing" : ""} ${application.status === "new" ? "applications--new" : ""}`}
+    >
       <div className="applications__header">
         <h3 className="applications__title">
           {application.name || "Без названия"}
@@ -480,11 +483,23 @@ export default function ApplicationCard({
           </div>
         </div>
         {!isEditing && (
-          <span
-            className={`applications__type-badge ${application.requestType}`}
-          >
-            {renderEditableField("requestType", "")}
-          </span>
+          <div className="applications__status">
+            <span
+              className={`applications__type-badge ${application.requestType}`}
+            >
+              {renderEditableField("requestType", "")}
+            </span>
+
+            <div className="applications__field">
+              <span className="applications__field-label">Статус:</span>
+              <span className="applications__field-value">
+                {" "}
+                {STATUS_LABELS[
+                  application.status as keyof typeof STATUS_LABELS
+                ] || application.status}
+              </span>
+            </div>
+          </div>
         )}
       </div>
 

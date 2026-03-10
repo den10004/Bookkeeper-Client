@@ -6,6 +6,7 @@
   --green: green;
   --red: rgb(235, 27, 55);
   --blue: blue;
+  --bg-new: #fff8e7
 }
 
 body {
@@ -159,6 +160,10 @@ table {
   grid-template-columns: 1fr 1fr 1fr;
   row-gap: 10px;
   column-gap: 50px;
+}
+
+.applications--new {
+  background: var(--bg-new) !important;
 }
 
 /******Cards ******************/
@@ -497,7 +502,7 @@ table {
 
 
 .applications__card.editing {
-  background: #fff8e7;
+  background: var(--bg-new);
   border: 1px solid var(--green5);
 }
 
@@ -557,7 +562,13 @@ table {
 
 }
 
-/* Анимации */
+.applications__status {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -574,14 +585,13 @@ table {
   animation: fadeIn 0.3s ease;
 }
 
-/* Загрузка */
+
 .applications__loading {
   text-align: center;
   padding: 20px;
   color: var(--text-secondary, #6c757d);
 }
 
-/* Пустое состояние */
 .applications__empty {
   text-align: center;
   padding: 40px;

@@ -33,6 +33,23 @@ export const DOCUMENT_FORMATS = {
   EDO: "edo",
 } as const;
 
+export const APPLICATION_STATUSES = {
+  NEW: "new",
+  UPDATED: "updated",
+  ACCEPTED: "accepted",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  REJECTED: "rejected",
+};
+export const STATUS_LABELS = {
+  [APPLICATION_STATUSES.NEW]: "Новая",
+  [APPLICATION_STATUSES.UPDATED]: "Обновлена",
+  [APPLICATION_STATUSES.ACCEPTED]: "Принята",
+  [APPLICATION_STATUSES.IN_PROGRESS]: "В работе",
+  [APPLICATION_STATUSES.COMPLETED]: "Завершена",
+  [APPLICATION_STATUSES.REJECTED]: "Отклонена",
+};
+
 export const DIRECTOR = "director";
 export const ACCOUNTANT = "accountant";
 export const MANAGER = "manager";

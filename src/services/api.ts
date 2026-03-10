@@ -107,6 +107,21 @@ class ApiService {
     }
   }
 
+  async getStatuses(token: string) {
+    const response = await fetch(`${API_BASE}/protected/statuses`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Ошибка загрузки статусов");
+    }
+
+    return response.json();
+  }
+
   async deleteApplication(token: string, id: string): Promise<void> {
     try {
       const response = await fetch(`${API_BASE}/protected/applications/${id}`, {

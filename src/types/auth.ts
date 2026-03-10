@@ -70,6 +70,7 @@ export interface Application {
   comment?: string;
   files?: FileData[];
   downloadLinks?: DownloadLink[];
+  status: string;
 }
 
 export interface CreateUserProps {
