@@ -15,69 +15,48 @@ interface ApplicationsProps {
   onApplicationsUpdate?: () => void;
 }
 
-// Простой сервис уведомлений без Service Worker
+// Простой сервис уведомлений
 const NotificationService = {
-  // Проверка поддержки
   isSupported(): boolean {
     return "Notification" in window;
   },
 
-  // Инициализация (запрос разрешения)
   async init(): Promise<boolean> {
-    if (!this.isSupported()) {
-      console.log("❌ Уведомления не поддерживаются");
-      return false;
-    }
+    if (!this.isSupported()) return false;
 
-    // Если уже есть разрешение
     if (Notification.permission === "granted") {
-      console.log("✅ Разрешение на уведомления уже есть");
       return true;
     }
 
-    // Если еще не спрашивали - запрашиваем
     if (Notification.permission === "default") {
       try {
-        console.log("📨 Запрашиваем разрешение на уведомления...");
         const permission = await Notification.requestPermission();
-        console.log("📨 Разрешение получено:", permission);
         return permission === "granted";
-      } catch (error) {
-        console.error("❌ Ошибка при запросе разрешения:", error);
+      } catch {
         return false;
       }
     }
 
-    // Если запрещено
-    console.log("❌ Уведомления запрещены пользователем");
     return false;
   },
 
-  // Отправка уведомления (только простой способ, без Service Worker)
   send(
     title: string,
     options: { body?: string; tag?: string; onClick?: () => void } = {},
   ): boolean {
-    // Проверяем поддержку и разрешение
     if (!this.isSupported() || Notification.permission !== "granted") {
-      console.log("❌ Нельзя отправить уведомление:", {
-        supported: this.isSupported(),
-        permission: Notification.permission,
-      });
       return false;
     }
 
     try {
-      // Создаем уведомление как в тесте 1
       const notification = new Notification(title, {
         body: options.body || "",
         icon: "/favicon.ico",
         tag: options.tag || `notify-${Date.now()}`,
-        requireInteraction: true, // Важно для Windows
-        silent: false, // Со звуком
+        requireInteraction: true,
+        silent: false,
       });
 
-      // Обработчик клика
       if (options.onClick) {
         notification.onclick = options.onClick;
       } else {
@@ -87,10 +66,8 @@ const NotificationService = {
         };
       }
 
-      console.log("✅ Уведомление отправлено:", title);
       return true;
-    } catch (error) {
-      console.error("❌ Ошибка при отправке уведомления:", error);
+    } catch {
       return false;
     }
   },
@@ -112,14 +89,9 @@ export default function Applications({
   const observer = useRef<IntersectionObserver | null>(null);
   const socketRef = useRef<ReturnType<typeof createSocket>>(null);
 
-  // Инициализация уведомлений при загрузке
+  // Инициализация уведомлений
   useEffect(() => {
-    NotificationService.init().then((ready) => {
-      setNotificationsReady(ready);
-      if (ready) {
-        console.log("🚀 Уведомления готовы к работе");
-      }
-    });
+    NotificationService.init().then(setNotificationsReady);
   }, []);
 
   const lastCardRef = useCallback(
@@ -161,17 +133,13 @@ export default function Applications({
     setApplications(initialApplications);
   }, [initialApplications]);
 
-  // Функция для показа уведомления
   const showNotification = (
     type: "created" | "updated" | "deleted",
     app:
       | Application
       | { id: string | number; name?: string; deletedByUsername?: string },
   ) => {
-    if (!notificationsReady) {
-      console.log("📱 Уведомления не готовы, пропускаем");
-      return;
-    }
+    if (!notificationsReady) return;
 
     let title = "";
     let body = "";
@@ -197,14 +165,11 @@ export default function Applications({
         break;
     }
 
-    // Отправляем уведомление (простой способ)
     NotificationService.send(title, {
       body,
       tag,
       onClick: () => {
         window.focus();
-        console.log("👆 Уведомление кликнуто, заявка:", app.id);
-        // Здесь можно добавить навигацию к заявке
       },
     });
   };
