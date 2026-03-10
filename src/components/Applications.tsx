@@ -34,6 +34,53 @@ export default function Applications({
     type: "success" | "info" | "warning" | "error";
   } | null>(null);
 
+  // 🔍 ОТЛАДКА: Проверяем поддержку уведомлений при монтировании компонента
+  useEffect(() => {
+    console.group("🔍 Notification Debug");
+    console.log(
+      "1. Поддерживает ли браузер уведомления?",
+      "Notification" in window,
+    );
+
+    if ("Notification" in window) {
+      console.log("2. Текущий статус permission:", Notification.permission);
+      console.log("3. Тип значения:", typeof Notification.permission);
+      console.log("4. Длина строки:", Notification.permission.length);
+      console.log(
+        "5. Код символов:",
+        [...Notification.permission].map((c) => c.charCodeAt(0)),
+      );
+
+      // Проверяем на скрытые символы
+      const permissionValue = Notification.permission;
+      const isExactMatch = permissionValue === "granted";
+      const isLooseMatch = permissionValue.trim() === "granted";
+
+      console.log('6. Точное совпадение с "granted":', isExactMatch);
+      console.log("7. Совпадение после trim():", isLooseMatch);
+
+      if (!isExactMatch && isLooseMatch) {
+        console.warn("⚠️ Обнаружены пробельные символы в значении permission!");
+      }
+    }
+
+    // Проверяем настройки Windows (только для Chrome)
+    const isChrome =
+      /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+    const isWindows = navigator.platform.includes("Win");
+
+    if (isChrome && isWindows) {
+      console.log("8. Браузер: Chrome на Windows");
+      console.log("9. User Agent:", navigator.userAgent);
+      console.log(
+        "10. Версия Chrome:",
+        navigator.userAgent.match(/Chrome\/(\d+\.\d+\.\d+\.\d+)/)?.[1],
+      );
+    }
+
+    console.groupEnd();
+  }, []);
+
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 5000);
@@ -80,6 +127,93 @@ export default function Applications({
     setApplications(initialApplications);
   }, [initialApplications]);
 
+  // 🔧 Функция для безопасной отправки уведомлений
+  const sendSafeNotification = (
+    title: string,
+    options: NotificationOptions,
+  ) => {
+    // Проверка поддержки
+    if (!("Notification" in window)) {
+      console.log("❌ Уведомления не поддерживаются браузером");
+      return false;
+    }
+
+    // 🔍 Детальная отладка перед отправкой
+    console.group("🔔 Попытка отправки уведомления");
+    console.log("Title:", title);
+    console.log("Permission status:", Notification.permission);
+    console.log("Permission type:", typeof Notification.permission);
+    console.log("Permission length:", Notification.permission.length);
+    console.log(
+      "Permission chars:",
+      [...Notification.permission].map((c) => c.charCodeAt(0)),
+    );
+
+    // Пробуем разные способы проверки
+    const strictCheck = Notification.permission === "granted";
+    const trimCheck = Notification.permission.trim() === "granted";
+    const lowerCheck = Notification.permission.toLowerCase() === "granted";
+
+    console.log("Строгая проверка (===):", strictCheck);
+    console.log("Проверка с trim():", trimCheck);
+    console.log("Проверка с toLowerCase():", lowerCheck);
+
+    // Если есть невидимые символы, используем более гибкую проверку
+    const isGranted = trimCheck || lowerCheck;
+
+    if (!isGranted) {
+      console.log("❌ Нет разрешения на уведомления");
+
+      // Если статус "default", пробуем запросить разрешение
+      if (
+        Notification.permission === "default" ||
+        Notification.permission.trim() === "default"
+      ) {
+        console.log("📨 Запрашиваем разрешение...");
+        Notification.requestPermission().then((permission) => {
+          console.log("Новый статус после запроса:", permission);
+          if (permission === "granted") {
+            // Повторяем отправку
+            try {
+              new Notification(title, options);
+              console.log("✅ Уведомление отправлено после запроса разрешения");
+            } catch (e) {
+              console.error("❌ Ошибка при отправке:", e);
+            }
+          }
+        });
+      }
+
+      console.groupEnd();
+      return false;
+    }
+
+    // Пробуем отправить уведомление
+    try {
+      const notification = new Notification(title, {
+        ...options,
+        silent: false, // Явно включаем звук
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+
+      notification.onerror = (error) => {
+        console.error("❌ Ошибка при показе уведомления:", error);
+      };
+
+      console.log("✅ Уведомление успешно создано");
+      console.groupEnd();
+      return true;
+    } catch (error) {
+      console.error("❌ Ошибка при создании уведомления:", error);
+      console.groupEnd();
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (!auth?.accessToken) return;
 
@@ -113,13 +247,13 @@ export default function Applications({
           type: "success",
         });
 
-        if (Notification.permission === "granted") {
-          new Notification("Новая заявка!", {
-            body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
-            icon: "/favicon.ico",
-            tag: `new-app-${newApp.id}`,
-          });
-        }
+        // 🔔 Используем нашу новую функцию с отладкой
+        sendSafeNotification("Новая заявка!", {
+          body: `Заявка: ${newApp.name || "Без названия"}\nОт: ${newApp.Creator?.username || MANAGER}`,
+          icon: "/favicon.ico",
+          tag: `new-app-${newApp.id}`,
+          requireInteraction: false,
+        });
       }
     });
 
@@ -154,13 +288,13 @@ export default function Applications({
         const appName = updatedApp.name || "Без названия";
         const updaterName = updatedApp.Updater?.username || MANAGER;
 
-        if (Notification.permission === "granted") {
-          new Notification("Заявка обновлена!", {
-            body: `Заявка: ${appName}\nИзменения от: ${updaterName}`,
-            icon: "/favicon.ico",
-            tag: `update-app-${updatedApp.id}`,
-          });
-        }
+        // 🔔 Используем нашу новую функцию с отладкой
+        sendSafeNotification("Заявка обновлена!", {
+          body: `Заявка: ${appName}\nИзменения от: ${updaterName}`,
+          icon: "/favicon.ico",
+          tag: `update-app-${updatedApp.id}`,
+          requireInteraction: false,
+        });
       }
     });
 
@@ -183,23 +317,13 @@ export default function Applications({
           const appName = payload.name || "Заявка";
           const deleterName = payload.deletedByUsername || "Пользователь";
 
-          if (Notification.permission === "granted") {
-            try {
-              const notification = new Notification("Заявка удалена!", {
-                body: `Заявка "${appName}" была удалена из системы пользователем ${deleterName}`,
-                icon: "/favicon.ico",
-                tag: `delete-app-${payload.id}`,
-                requireInteraction: true,
-              });
-
-              notification.onclick = () => {
-                window.focus();
-                notification.close();
-              };
-            } catch (notifError) {
-              console.error("Ошибка при отправке уведомления:", notifError);
-            }
-          }
+          // 🔔 Используем нашу новую функцию с отладкой
+          sendSafeNotification("Заявка удалена!", {
+            body: `Заявка "${appName}" была удалена из системы пользователем ${deleterName}`,
+            icon: "/favicon.ico",
+            tag: `delete-app-${payload.id}`,
+            requireInteraction: true,
+          });
         }
       },
     );
